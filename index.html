@@ -84,7 +84,16 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 </style>
 </head>
 <body>
-<div id="gate"><div class="panel" style="padding:24px 30px;max-width:440px"><h2 style="margin:0">⚡ MEEG Productivity</h2><div id="gateMsg">⏳ Checking access…</div></div></div>
+<div id="gate">
+  <div class="panel" style="padding:28px 32px;max-width:420px;width:100%">
+    <h2 style="margin:0 0 4px">⚡ MEEG Productivity</h2>
+    <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px">Enter your email to open the dashboard.</p>
+    <input id="gateEmail" type="email" placeholder="you@company.com"
+      style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:13px;margin-bottom:10px">
+    <button class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
+    <div id="gateMsg" style="white-space:pre-wrap;margin-top:10px;color:var(--ink-soft);font-size:12.5px"></div>
+  </div>
+</div>
 
 <div class="header">
   <div><h1>⚡ MEEG Productivity</h1><div class="meta">Unified Dashboard — <span id="updTime">—</span></div></div>
@@ -127,6 +136,22 @@ function toggleTheme(){
   try { saved = localStorage.getItem('meeg_theme') || 'dark'; } catch(e){}
   applyTheme(saved);
 })();
+
+// ============================================================
+//  API — بيكلم Apps Script (اللي بقى API JSON بس) عن طريق fetch
+// ============================================================
+// ⚠️ حط هنا لينك الـ /exec بتاع الـ Deploy بتاعك (نفس اللينك اللي كنت بتفتحه في المتصفح)
+const API_URL = "PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE";
+
+let CURRENT_EMAIL = '';
+try { CURRENT_EMAIL = localStorage.getItem('meeg_email') || ''; } catch(e){}
+
+function callApi(action, params){
+  const p = new URLSearchParams({ action, email: CURRENT_EMAIL, ...(params||{}) });
+  return fetch(API_URL + '?' + p.toString())
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(res=>{ if(res && res.error) throw new Error(res.error); return res; });
+}
 
 // ---------- helpers ----------
 function esc(s){ return String(s===undefined||s===null?'':s); }
@@ -248,14 +273,13 @@ let liveState = { shifts:new Set(), modalities:new Set(), passes:new Set(), tab:
 
 function loadLive(){
   document.getElementById('view-live').innerHTML = '<div class="loading">⏳ Loading live data…</div>';
-  google.script.run
-    .withFailureHandler(e=>{ document.getElementById('view-live').innerHTML = errBox('Failed to load: '+e.message, 'loadLive'); })
-    .withSuccessHandler(res=>{
-      if(res.error){ document.getElementById('view-live').innerHTML = errBox(res.error, 'loadLive'); return; }
+  callApi('live')
+    .then(res=>{
       liveData = res;
       document.getElementById('updTime').textContent = res.lastUpdated;
       renderLiveShell();
-    }).getDashboardData();
+    })
+    .catch(e=>{ document.getElementById('view-live').innerHTML = errBox('Failed to load: '+e.message, 'loadLive'); });
 }
 
 function renderLiveShell(){
@@ -490,12 +514,9 @@ let qcData = null, qcSt = { shift:'', qtc:'', labeler:'' };
 function qcRowsAll(){ return qcData.rows.map(r=>({...r, week:qcData.weekTag, tasks:1, shiftN:normShift(r.shift)})); }
 function loadQC(){
   document.getElementById('view-qc').innerHTML = '<div class="loading">⏳ Loading…</div>';
-  google.script.run
-    .withFailureHandler(e=>{ document.getElementById('view-qc').innerHTML = errBox(e.message, 'loadQC'); })
-    .withSuccessHandler(res=>{
-      if(res.error){ document.getElementById('view-qc').innerHTML = errBox(res.error, 'loadQC'); return; }
-      qcData = res; renderQC();
-    }).getQCQuality();
+  callApi('qc')
+    .then(res=>{ qcData = res; renderQC(); })
+    .catch(e=>{ document.getElementById('view-qc').innerHTML = errBox(e.message, 'loadQC'); });
 }
 function renderQC(){
   document.getElementById('view-qc').innerHTML = `
@@ -526,12 +547,9 @@ function renderQCBody(){
 let teamsQData = null, tqSt = { shift:'', qtc:'' }, tqView = 'totals';
 function loadTeamsQ(){
   document.getElementById('view-teamsq').innerHTML = '<div class="loading">⏳ Loading…</div>';
-  google.script.run
-    .withFailureHandler(e=>{ document.getElementById('view-teamsq').innerHTML = errBox(e.message, 'loadTeamsQ'); })
-    .withSuccessHandler(res=>{
-      if(res.error){ document.getElementById('view-teamsq').innerHTML = errBox(res.error, 'loadTeamsQ'); return; }
-      teamsQData = res; renderTeamsQ();
-    }).getFlashaQuality();
+  callApi('teamsq')
+    .then(res=>{ teamsQData = res; renderTeamsQ(); })
+    .catch(e=>{ document.getElementById('view-teamsq').innerHTML = errBox(e.message, 'loadTeamsQ'); });
 }
 function tqRows(){ return teamsQData.rows.map(r=>({...r, shiftN:normShift(r.shift), tasks:Number(r.tasks)||0})); }
 function renderTeamsQ(){
@@ -695,17 +713,38 @@ function runTeamsSubmission(){
     }).getTeamsSubmission(date, teamsSt.shift);
 }
 
-// ---------- access gate + boot ----------
+// ============================================================
+//  ACCESS GATE — صندوق إيميل بسيط (من غير تحقق حقيقي من جوجل)
+// ============================================================
 function gateMsg(m){ document.getElementById('gateMsg').textContent = m; }
 function bootApp(u){
+  CURRENT_EMAIL = u.email;
+  try { localStorage.setItem('meeg_email', u.email); } catch(e){}
   document.getElementById('userChip').textContent = '👤 ' + u.name + (u.position ? ' — ' + u.position : '');
   document.getElementById('gate').classList.add('hide');
   loadTab('live');
 }
-google.script.run
-  .withFailureHandler(e=>gateMsg('⚠️ '+e.message))
-  .withSuccessHandler(u=>{ if(u && u.ok) bootApp(u); else gateMsg('🔒 '+((u&&u.msg)||'Access denied')+(u&&u.email?'\n'+u.email:'')); })
-  .checkAccess();
+function tryEmail(email){
+  gateMsg('⏳ Checking…');
+  callApi('checkemail', { email })
+    .then(u=>{ if(u && u.ok) bootApp(u); else gateMsg('🔒 ' + ((u&&u.msg)||'Access denied')); })
+    .catch(e=>gateMsg('⚠️ ' + e.message));
+}
+function submitGateEmail(){
+  const email = document.getElementById('gateEmail').value.trim().toLowerCase();
+  if(!email){ gateMsg('⚠️ Please enter an email'); return; }
+  tryEmail(email);
+}
+document.getElementById('gateEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') submitGateEmail(); });
+
+if (API_URL.indexOf('PASTE_YOUR') === 0) {
+  gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
+} else if (CURRENT_EMAIL) {
+  document.getElementById('gateEmail').value = CURRENT_EMAIL;
+  tryEmail(CURRENT_EMAIL); // دخول تلقائي لو الإيميل محفوظ من قبل في نفس المتصفح
+} else {
+  gateMsg('');
+}
 </script>
 </body>
 </html>

@@ -170,7 +170,7 @@ function fmtPct(v){ return (v===''||v===null||v===undefined||isNaN(v)) ? '-' : (
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 function errBox(msg, retryFn){ return `<div class="err">⚠️ ${esc(msg)}<br><button onclick="(${retryFn})()">🔁 Retry</button></div>`; }
 const LOADING = '<div class="loading">Loading…</div>';
-function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').replace(/\s+/g,' ').trim().toLowerCase(); if(k) m[k]=i; }); return m; }
+function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').replace(/\s+/g,' ').trim().toLowerCase(); if(k&&m[k]===undefined) m[k]=i; }); return m; }
 function ci(m, names){ for(const n of names){ const k=n.toLowerCase(); if(m[k]!==undefined) return m[k]; } return -1; }
 function gc(r,i){ return i>=0 ? r[i] : ''; }
 function toNum(v){ if(v===''||v==null) return ''; const n=Number(v); return isNaN(n)?'':n; }
@@ -668,6 +668,7 @@ function runFastAudit(){
   if(document.getElementById('fastCustomRange').style.display!=='none'){
     from=new Date(document.getElementById('fastFrom').value); to=new Date(document.getElementById('fastTo').value);
     if(isNaN(from)||isNaN(to)) return;
+    if(from>to){ ++fastReq; document.getElementById('fastResults').innerHTML='<div class="err">⚠️ تاريخ "From" ('+fmtDT(from)+') بعد تاريخ "To" ('+fmtDT(to)+'). عدّل التاريخين.</div>'; return; }
   } else { from=fastRange.from; to=fastRange.to; }
   const my=++fastReq, box=document.getElementById('fastResults'); box.innerHTML=LOADING;
   getSheet(CFG.DB,true).then(db=>{ if(my!==fastReq) return; renderFastResults(auditFast(db,from,to)); })
@@ -717,6 +718,7 @@ function renderFastResults(res){
     const body=g.map(x=>`<div style="margin-bottom:10px"><div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(x.name)} — Queue: ${esc(x.queueName)} (${x.count} rows)</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Task ID</th><th>PC</th><th>Objects</th><th>Labeler</th><th>QC</th><th>Diff</th></tr></thead><tbody>${x.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.unit)}</td><td class="sh-${r.shift}">${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td>${esc(r.taskId)}</td><td>${esc(r.pc)}</td><td>${esc(r.obj)}</td><td>${esc(r.labeler)}</td><td>${esc(r.qc)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
     return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${g.reduce((s,x)=>s+x.count,0)} violations</span></div><div class="panel-body">${body}</div></div>`;
   }).join('');
+  if(!S.some(([k])=>(res[k]||[]).length)) document.getElementById('fastResults').insertAdjacentHTML('beforeend','<div class="err" style="margin-top:8px">مفيش مخالفات في الفترة دي بالفلاتر الحالية (Shift: '+(fastF.shift||'All')+' · Who: '+(fastF.role||'All')+' · Modality: '+(fastF.mod||'All')+' · Pass: '+fastF.pass+'). جرّب Pass: All أو Shift: All.</div>');
 }
 
 // ============================================================

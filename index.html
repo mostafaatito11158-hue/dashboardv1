@@ -771,10 +771,11 @@ function computeTeams(tm,db,date,shiftCode){
   const iEmD=ci(d,['yubikey email']);
   const iQtc=ci(d,['qtc name']); if(iQtc<0) throw new Error('Column "QTC Name" not found in Data Base. Columns: '+db.headers.join(' | '));
   const iPc=ci(d,['pc no']), iMod=ci(d,['modality']), iPass=ci(d,['pass']);
-  const recs=[];
+  const recs=[], avail={};
   db.rows.forEach(row=>{
     const t=parseTS(gc(row,iTs)); if(!t) return;
     const rawRoom=gc(row,iRoom), cls=shiftOf(rawRoom,t);
+    if(cls){ const a=avail[cls.date]=avail[cls.date]||{ON:0,M:0,N:0}; a[cls.shift]++; }
     if(!cls||cls.shift!==shiftCode||cls.date!==date) return;
     const sub=String(gc(row,iQtc)||'').trim(), rawPc=gc(row,iPc);
     const rec={ qc:cleanName(sub), mod:/LANE|LINE/i.test(String(gc(row,iMod)||''))?'Lane':'Lidar', pass:isQAPass(gc(row,iPass))?'QA':'FP', team:null, label:null };
@@ -787,7 +788,8 @@ function computeTeams(tm,db,date,shiftCode){
     if(!rec.team&&(rec.label==='No PC'||rec.label==='Unmatched PC')){ const k=emailMap[String(gc(row,iEmD)||'').trim().toLowerCase()]; if(k&&allowed[k]){ rec.team=k; rec.label=null; } }
     recs.push(rec);
   });
-  return { recs, keys, owners, shift:shiftCode, date };
+  const samples=db.rows.slice(-3).map(r=>{ const t=parseTS(gc(r,iTs)); return String(gc(r,iTs))+' → '+(t?t.date+' / '+t.mins+' min':'غير مقروء'); });
+  return { recs, keys, owners, avail, samples, nRows:db.rows.length, tsCol:iTs, shift:shiftCode, date };
 }
 function cntStr(m){ return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,n])=>k+' ('+n+')').join('، ')||'-'; }
 function renderTeamsResults(){
@@ -811,7 +813,9 @@ function renderTeamsResults(){
     if(r.team){ samePerson(normName(r.qc),r.team)?o.own++:o.other++; } else o.special++;
     o[(r.pass==='QA'?'qa':'fp')+r.mod]++; o.total++; });
   const I=Object.values(m).sort((a,b)=>b.total-a.total);
-  document.getElementById('teamsResults').innerHTML=`
+  const days=Object.keys(res.avail||{}).sort().reverse().slice(0,7).map(d=>d+' (ON '+res.avail[d].ON+' · M '+res.avail[d].M+' · N '+res.avail[d].N+')').join('  |  ');
+  const hint=res.recs.length?'':`<div class="err" style="margin-bottom:12px">⚠️ مفيش أي تاسكات لـ ${esc(res.date)} شيفت ${esc(res.shift)} في Data Base.<br>الأيام الموجودة (آخر 7): ${esc(days||'مفيش بيانات')}<br>عدد صفوف Data Base: ${res.nRows} · عمود Timestamp رقم: ${res.tsCol}<br>آخر 3 timestamps: ${esc((res.samples||[]).join('  ||  '))}</div>`;
+  document.getElementById('teamsResults').innerHTML=hint+`
     <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(sub)}</h3></div><div class="panel-body"><div class="table-wrap shot"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
     <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td class="wrap">${esc(r.names)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
     ${T.length?`<tr class="total"><td>TOTAL</td><td>${num(T,'total')}</td><td>${num(T,'own')}</td><td>${num(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div></div></div>

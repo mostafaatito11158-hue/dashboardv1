@@ -74,8 +74,21 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .ss-list div:hover,.ss-list div.on{background:var(--chip-line)}
 .ss-list .none{color:var(--ink-soft);cursor:default}
 .loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px;color:var(--ink-soft)}
-.loading::before{content:"";width:46px;height:46px;border-radius:50%;border:4px solid var(--chip-line);border-top-color:var(--acc);border-right-color:#f472b6;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.loading::before{content:"⚡";font-size:52px;line-height:1;filter:drop-shadow(0 0 14px var(--acc));animation:zap 1s ease-in-out infinite}
+.loading::after{content:"";width:170px;height:5px;border-radius:5px;background:linear-gradient(90deg,transparent,var(--acc),#f472b6,transparent);background-size:200% 100%;animation:slide 1.1s linear infinite}
+@keyframes zap{0%,100%{transform:scale(.85) rotate(-10deg);opacity:.55}50%{transform:scale(1.18) rotate(10deg);opacity:1}}
+@keyframes slide{to{background-position:-200% 0}}
+.lnk{color:var(--acc);font-weight:700;text-decoration:none}.lnk:hover{text-decoration:underline}
+.dp{position:relative;display:inline-block}.dp-pop{width:262px;padding:10px;top:36px}
+.dp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--ink)}
+.dp-h button,.dp-f button{border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);border-radius:8px;padding:3px 10px;cursor:pointer;font-weight:700}
+.dp-w,.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.dp-w i{font-style:normal;font-size:10px;color:var(--ink-soft)}
+.dp-d{border:none;background:none;color:var(--ink);padding:6px 0;border-radius:8px;cursor:pointer;font-size:12px}
+.dp-d:hover{background:var(--chip-line)}.dp-d.on{background:var(--acc);color:var(--on-acc);font-weight:800}
+.dp-t{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:8px;color:var(--ink)}
+.dp-t select{padding:4px 6px;border-radius:8px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink)}
+.dp-f{margin-top:8px;text-align:center}
 #gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:var(--back);background-color:var(--bg);padding:20px;text-align:center}
 #gate.hide{display:none}
 .gate-input{width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:14px;margin-bottom:12px;outline:none;transition:.2s}
@@ -152,12 +165,12 @@ function getSheet(name, bg){
 const optSheet = (n)=>getSheet(n).catch(()=>({headers:[],rows:[]}));
 
 // ---------- helpers ----------
-function esc(s){ return String(s===undefined||s===null?'':s); }
+function esc(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtPct(v){ return (v===''||v===null||v===undefined||isNaN(v)) ? '-' : (Number(v)<=1 ? (Number(v)*100).toFixed(1)+'%' : Number(v).toFixed(1)); }
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 function errBox(msg, retryFn){ return `<div class="err">⚠️ ${esc(msg)}<br><button onclick="(${retryFn})()">🔁 Retry</button></div>`; }
 const LOADING = '<div class="loading">Loading…</div>';
-function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').trim().toLowerCase(); if(k) m[k]=i; }); return m; }
+function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').replace(/\s+/g,' ').trim().toLowerCase(); if(k) m[k]=i; }); return m; }
 function ci(m, names){ for(const n of names){ const k=n.toLowerCase(); if(m[k]!==undefined) return m[k]; } return -1; }
 function gc(r,i){ return i>=0 ? r[i] : ''; }
 function toNum(v){ if(v===''||v==null) return ''; const n=Number(v); return isNaN(n)?'':n; }
@@ -321,7 +334,7 @@ let liveData=null;
 let liveState={ shifts:new Set(), modalities:new Set(), passes:new Set(), tab:'all', search:'', filters:{date:'',qtc:'',labeler:'',device:'',queue:''} };
 
 function buildLive(db){
-  const H=db.headers, hl=H.map(h=>h.toLowerCase());
+  const H=db.headers.map(h=>String(h).replace(/\s+/g,' ').trim()), hl=H.map(h=>h.toLowerCase());
   const shiftI=hl.indexOf('shift'); let tsIdx=hl.indexOf('timestamp'); if(tsIdx<0) tsIdx=hl.findIndex(h=>h.includes('date'));
   let loc=hl.indexOf('unit'); if(loc<0) loc=hl.indexOf('location');
   const rows=[];
@@ -340,11 +353,11 @@ function buildLive(db){
   so['Shift']=['M','N','ON'];
   so['_dates']=[...new Set(rows.map(r=>tsIdx>=0?String(r[tsIdx]||'').substring(0,10):'').filter(x=>/^\d{4}-/.test(x)))].sort().reverse();
   const locations=loc>=0?[...new Set(rows.map(r=>String(r[loc]||'').trim()).filter(Boolean))].sort():[];
-  return { headers:H.map(h=>h||'—'), rows, slicerIndices:si, slicerOptions:so, tsIdx, locationColIdx:loc, locations };
+  return { headers:H.map(h=>h||'—'), rows, slicerIndices:si, slicerOptions:so, tsIdx, locationColIdx:loc, locations, linkIdx:hl.indexOf('task link'), idIdx:hl.indexOf('task id') };
 }
 function loadLive(){
   document.getElementById('view-live').innerHTML=LOADING;
-  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); document.getElementById('updTime').textContent=new Date().toLocaleString(); renderLiveShell(); })
+  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); document.getElementById('updTime').textContent=new Date().toLocaleString(); renderLiveShell(); if(liveData.slicerIndices['Qtc Name']===undefined) document.getElementById('view-live').insertAdjacentHTML('afterbegin','<div class="err" style="margin-bottom:12px">⚠️ عمود QTC Name مش موجود في Data Base. الأعمدة: '+esc(liveData.headers.join(' | '))+'</div>'); })
     .catch(e=>{ document.getElementById('view-live').innerHTML=errBox('Failed to load: '+e.message,'loadLive'); });
 }
 function renderLiveShell(){
@@ -393,6 +406,41 @@ function onLiveFilterChange(){
   f.device=document.getElementById('fDevice').value; f.queue=document.getElementById('fQueue').value; renderLiveBody();
 }
 function clearLiveFilters(){ liveState={shifts:new Set(),modalities:new Set(),passes:new Set(),tab:'all',search:'',filters:{date:'',qtc:'',labeler:'',device:'',queue:''}}; renderLiveShell(); }
+// ---------- روابط التاسكات (تتفتح في تاب جديد) ----------
+function cellHtml(c,i,r){
+  const L=liveData.linkIdx, url=L>=0?String(r[L]||''):'';
+  if(/^https?:\/\//.test(url)){
+    if(i===L) return `<td><a class="lnk" href="${esc(url)}" target="_blank" rel="noopener">Open ↗</a></td>`;
+    if(i===liveData.idIdx) return `<td><a class="lnk" href="${esc(url)}" target="_blank" rel="noopener">${esc(c)} ↗</a></td>`;
+  }
+  return '<td>'+esc(c)+'</td>';
+}
+function linkTask(r){
+  return /^https?:\/\//.test(r.link||'') ? `<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.taskId||'open')} ↗</a>` : esc(r.taskId);
+}
+// ---------- منتقي التاريخ/الوقت بشكل الداشبورد (بدل فلتر المتصفح) ----------
+function dpInit(id,withTime,init){
+  const host=document.getElementById(id); let cur=new Date(init), view=new Date(cur.getFullYear(),cur.getMonth(),1);
+  host.innerHTML='<button type="button" class="ss-btn"></button><div class="ss-pop dp-pop"></div>';
+  const btn=host.children[0], pop=host.children[1];
+  const iso=()=>cur.getFullYear()+'-'+pad(cur.getMonth()+1)+'-'+pad(cur.getDate())+(withTime?'T'+pad(cur.getHours())+':'+pad(cur.getMinutes()):'');
+  const sync=()=>{ host.value=iso(); btn.textContent='📅 '+iso().replace('T','  ⏰ ')+' ▾'; };
+  const fire=()=>{ sync(); if(host.onchange) host.onchange(); };
+  const draw=()=>{
+    const y=view.getFullYear(), m=view.getMonth(), first=(new Date(y,m,1).getDay()+1)%7, days=new Date(y,m+1,0).getDate();
+    let cells=''; for(let i=0;i<first;i++) cells+='<span></span>';
+    for(let d=1;d<=days;d++){ const on=cur.getFullYear()===y&&cur.getMonth()===m&&cur.getDate()===d; cells+=`<button type="button" class="dp-d ${on?'on':''}" data-d="${d}">${d}</button>`; }
+    const opt=(n,sel)=>Array.from({length:n},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${pad(i)}</option>`).join('');
+    pop.innerHTML=`<div class="dp-h"><button type="button" data-nav="-1">‹</button><b>${MON[m]} ${y}</b><button type="button" data-nav="1">›</button></div><div class="dp-w">${['Sa','Su','Mo','Tu','We','Th','Fr'].map(x=>'<i>'+x+'</i>').join('')}</div><div class="dp-g">${cells}</div>${withTime?`<div class="dp-t">⏰ <select data-t="h">${opt(24,cur.getHours())}</select> : <select data-t="m">${opt(60,cur.getMinutes())}</select></div>`:''}<div class="dp-f"><button type="button" data-today="1">Today</button></div>`;
+  };
+  pop.onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return;
+    if(b.dataset.nav){ view=new Date(view.getFullYear(),view.getMonth()+Number(b.dataset.nav),1); draw(); }
+    else if(b.dataset.d){ cur=new Date(view.getFullYear(),view.getMonth(),Number(b.dataset.d),cur.getHours(),cur.getMinutes()); fire(); if(withTime) draw(); else closeSS(); }
+    else if(b.dataset.today){ const n=new Date(); cur=new Date(n.getFullYear(),n.getMonth(),n.getDate(),cur.getHours(),cur.getMinutes()); view=new Date(cur.getFullYear(),cur.getMonth(),1); fire(); if(withTime) draw(); else closeSS(); } };
+  pop.onchange=e=>{ const t=e.target.dataset.t; if(!t) return; if(t==='h') cur.setHours(+e.target.value); else cur.setMinutes(+e.target.value); fire(); };
+  btn.onclick=e=>{ e.stopPropagation(); const open=pop.style.display==='block'; closeSS(); if(!open){ view=new Date(cur.getFullYear(),cur.getMonth(),1); draw(); pop.style.display='block'; const pn=host.closest('.panel'); if(pn) pn.classList.add('ss-open'); } };
+  sync();
+}
 function getFilteredLiveRows(){
   const si=liveData.slicerIndices, F=liveState.filters; let rows=liveData.rows;
   if(liveState.shifts.size) rows=rows.filter(r=>liveState.shifts.has(r.sh));
@@ -440,7 +488,7 @@ function renderLiveBody(){
     </div></div></div>
     <div class="panel"><div class="panel-head"><h3>📁 Queue — Total Submits</h3><span>${Object.keys(qt).length} queues</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Queue</th><th>Modality</th><th>Pass</th><th>Count</th></tr></thead><tbody>
       ${Object.entries(qt).flatMap(([q,c])=>Object.entries(c).map(([k,n])=>{ const [m,p]=k.split('|'); return `<tr><td>${esc(q)}</td><td>${esc(m)}</td><td>${esc(p)}</td><td><b>${n}</b></td></tr>`; })).join('')||'<tr><td colspan="4">No data</td></tr>'}</tbody></table></div></div>
-    <div class="panel"><div class="panel-head"><h3>📋 Row Detail</h3><span>${rows.length} rows (showing up to 300)</span></div><div class="panel-body"><div class="table-wrap"><table><thead><tr>${liveData.headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.slice(0,300).map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')}</tbody></table></div></div></div>`;
+    <div class="panel"><div class="panel-head"><h3>📋 Row Detail</h3><span>${rows.length} rows (showing up to 300)</span></div><div class="panel-body"><div class="table-wrap"><table><thead><tr>${liveData.headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.slice(0,300).map(r=>'<tr>'+r.map((c,i)=>cellHtml(c,i,r)).join('')+'</tr>').join('')}</tbody></table></div></div></div>`;
 }
 let totalBy='qc';
 function totalTable(title,rows,idx){
@@ -529,7 +577,7 @@ function renderQCContent(){
   document.getElementById('qcCount').textContent=rows.length+' tasks';
   const box=document.getElementById('qcContent');
   if(qcView==='individual'){
-    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>QC</th><th>Shift</th><th>Labeler</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.taskId)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.labeler)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>QC</th><th>Shift</th><th>Labeler</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${linkTask(r)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.labeler)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
   }
   if(qcView==='qc'){
     const g={}; rows.forEach(r=>{ const k=r.qtc+'||'+r.shiftN; (g[k]=g[k]||{qtc:r.qtc,sh:r.shiftN,rows:[]}).rows.push(r); });
@@ -596,9 +644,10 @@ function renderFastForm(){
   const el=document.getElementById('view-fast');
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>⚡ Fast Submits Audit</h3></div><div class="panel-body">
     <div class="filters" id="fastPresets"><button class="pill on" data-preset="24h">🕐 Last 24h</button><button class="pill" data-preset="today">📆 Today</button><button class="pill" data-preset="yesterday">📅 Yesterday</button><button class="pill" data-preset="7d">🗓️ Last 7 Days</button><button class="pill" data-preset="custom">🛠️ Custom Range</button></div>
-    <div class="filters" id="fastCustomRange" style="display:none"><label>From:</label><input type="datetime-local" id="fastFrom"><label>To:</label><input type="datetime-local" id="fastTo"></div>
+    <div class="filters" id="fastCustomRange" style="display:none"><label>From:</label><span class="dp" id="fastFrom"></span><label>To:</label><span class="dp" id="fastTo"></span></div>
     <div id="fastFilters">${FAST_ROWS.map(([k,l,o])=>`<div class="filters"><label>${l}</label>${o.map(([v,t])=>`<button class="pill ${fastF[k]===v?'on':''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`).join('')}</div>
     <div id="fastResults"></div></div></div>`;
+  { const t0=new Date(); t0.setHours(0,0,0,0); dpInit('fastFrom',true,t0); dpInit('fastTo',true,new Date()); }
   const setPreset=p=>{ const now=new Date(); let from,to=now;
     if(p==='24h') from=new Date(now-86400000);
     else if(p==='today'){ from=new Date(now); from.setHours(0,0,0,0); }
@@ -608,7 +657,7 @@ function renderFastForm(){
   document.getElementById('fastPresets').addEventListener('click',e=>{ const b=e.target.closest('.pill'); if(!b) return;
     document.querySelectorAll('#fastPresets .pill').forEach(p=>p.classList.toggle('on',p===b));
     const p=b.dataset.preset; document.getElementById('fastCustomRange').style.display=p==='custom'?'flex':'none';
-    if(p!=='custom'){ setPreset(p); runFastAudit(); } });
+    if(p!=='custom') setPreset(p); runFastAudit(); });
   document.getElementById('fastFilters').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return;
     fastF[b.dataset.k]=b.dataset.v; b.parentNode.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===b)); runFastAudit(); };
   const auto=debounce(runFastAudit,700); document.getElementById('fastFrom').onchange=auto; document.getElementById('fastTo').onchange=auto;
@@ -629,6 +678,7 @@ const isQAPass=p=>/QA|QUALITY|QQ|SPOT/.test(String(p||'').toUpperCase());
 function auditFast(db,from,to){
   const c=cmap(db.headers), I={ts:ci(c,['timestamp']),unit:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),
     pass:ci(c,['pass']),pc:ci(c,['pc no']),obj:ci(c,['object count','objects count','objects']),tid:ci(c,['task id']),link:ci(c,['task link'])};
+  if(I.qc<0) throw new Error('Column "QTC Name" not found in Data Base. Columns: '+db.headers.join(' | '));
   const G={labelerLane:{},labelerLidar:{},qcLane:{},qcLidar:{}};
   db.rows.forEach((r,i)=>{
     if(db.orange&&db.orange[i]) return;
@@ -640,7 +690,7 @@ function auditFast(db,from,to){
     if(fastF.mod==='lane'&&!lane) return; if(fastF.mod==='lidar'&&lane) return;
     const lab=String(gc(r,I.lab)||'').trim(), qc=String(gc(r,I.qc)||'').trim();
     const it={ ms:t.ms, shift:sh, unit:String(gc(r,I.unit)||'').trim(), queue:String(gc(r,I.q)||'').trim()||'Default Queue', key:String(gc(r,I.tid)||gc(r,I.link)||'').trim(),
-      taskId:String(gc(r,I.tid)||'').trim(), pc:String(gc(r,I.pc)||'').trim(), obj:gc(r,I.obj), labeler:lab, qc, pass };
+      taskId:String(gc(r,I.tid)||'').trim(), link:String(gc(r,I.link)||'').trim(), pc:String(gc(r,I.pc)||'').trim(), obj:gc(r,I.obj), labeler:lab, qc, pass };
     const add=(key,name)=>{ if(!name) return; const m=G[key]; ((m[name]=m[name]||{})[it.queue]=m[name][it.queue]||[]).push(it); };
     if(fastF.role!=='qc') add(lane?'labelerLane':'labelerLidar',lab);
     if(fastF.role!=='labeler') add(lane?'qcLane':'qcLidar',qc);
@@ -675,7 +725,7 @@ function renderFastResults(res){
 const SPECIAL=['QTC','SV','SL'];
 let teamsSt={shift:null,mod:'',pass:''}, teamsReq=0, teamsRes=null;
 function extractPc(v){ if(!v) return null; const s=String(v).trim(); for(const p of s.split('-')){ if(/^\d+$/.test(p.trim())) return p.trim(); } const m=s.match(/\b\d+\b/); return m?m[0]:null; }
-function roomKey(v){ const s=String(v||'').toLowerCase(); if(s.includes('108')) return 'room108'; if(s.includes('106')) return 'room106'; if(s.includes('102')) return 'room102'; if(s.includes('4th')||s.includes('fourth')) return 'floor4'; return ''; }
+function roomKey(v){ const s=String(v||'').toLowerCase(); if(s.includes('108')) return 'room108'; if(s.includes('106')) return 'room106'; if(s.includes('102')) return 'room102'; if(s.includes('4th')||s.includes('fourth')||/floor\s*4/.test(s)) return 'floor4'; return ''; }
 function specialLabel(v){ const s=String(v||'').replace(/\s+/g,' ').trim().toUpperCase(); if(!s) return null; if(SPECIAL.some(t=>new RegExp('(^|[^A-Z])'+t+'([^A-Z]|$)').test(s))) return s; return /\d/.test(s)?null:s; }
 const shiftOrEmpty=v=>{ const s=normShift(v); return s==='—'?'':s; };
 const TEAMS_ROWS=[
@@ -687,9 +737,10 @@ function renderTeamsForm(){
   const el=document.getElementById('view-teams'), n=new Date(), today=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());
   if(!teamsSt.shift){ const h=n.getHours(); teamsSt.shift=h<8?'ON':(h<16?'M':'N'); }
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>📋 Teams Submission</h3></div><div class="panel-body">
-    <div class="filters"><label>Date:</label><input type="date" id="teamsDate" value="${today}"></div>
+    <div class="filters"><label>Date:</label><span class="dp" id="teamsDate"></span></div>
     <div id="teamsFilters">${TEAMS_ROWS.map(([k,l,o])=>`<div class="filters"><label>${l}</label>${o.map(([v,t])=>`<button class="pill ${teamsSt[k]===v?'on':''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`).join('')}</div>
     </div></div><div id="teamsResults"></div>`;
+  dpInit('teamsDate',false,n);
   document.getElementById('teamsDate').onchange=runTeamsSubmission;
   document.getElementById('teamsFilters').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return;
     teamsSt[b.dataset.k]=b.dataset.v; b.parentNode.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===b));
@@ -706,17 +757,20 @@ function runTeamsSubmission(){
 // بيجمّع كل سبمت كـ record، والفلاتر (Modality/Pass) بتتطبق عليها قبل أي جدول
 function computeTeams(tm,db,date,shiftCode){
   const tc=cmap(tm.headers), iP=ci(tc,['pc no.','pc no']), iL=ci(tc,['location']), iQ=ci(tc,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(tc,['shift']);
-  const owners={}, order=[], pcs=[]; let cur=null;
+  const owners={}, order=[], pcs=[], emailMap={}; let cur=null; const iEm=ci(tc,['labeler yubikey','yubikey','yubikey email']);
   tm.rows.forEach(r=>{
     const raw=String(gc(r,iQ)||'').trim();
     if(raw){ const key=normName(raw); if(key){ cur=key; if(!owners[key]){ owners[key]={raw,shift:shiftFromName(raw)||shiftOrEmpty(gc(r,iS))}; order.push(key); } } }
     const pc=extractPc(gc(r,iP)); if(pc&&cur) pcs.push({key:cur,pc,room:roomKey(gc(r,iL))});
+    const em=String(gc(r,iEm)||'').trim().toLowerCase(); if(em.includes('@')&&cur) emailMap[em]=cur;
   });
   let keys=order.filter(k=>owners[k].shift===shiftCode); if(!keys.length) keys=order.slice();
   const allowed={}; keys.forEach(k=>allowed[k]=true);
   const pcMap={}; pcs.forEach(p=>{ if(!allowed[p.key]) return; if(p.room) pcMap[p.room+'_'+p.pc]=p.key; pcMap[p.pc]=p.key; });
   const d=cmap(db.headers), iTs=ci(d,['timestamp']); let iRoom=ci(d,['unit']); if(iRoom<0) iRoom=ci(d,['queue name']);
-  const iQtc=ci(d,['qtc name']), iPc=ci(d,['pc no']), iMod=ci(d,['modality']), iPass=ci(d,['pass']);
+  const iEmD=ci(d,['yubikey email']);
+  const iQtc=ci(d,['qtc name']); if(iQtc<0) throw new Error('Column "QTC Name" not found in Data Base. Columns: '+db.headers.join(' | '));
+  const iPc=ci(d,['pc no']), iMod=ci(d,['modality']), iPass=ci(d,['pass']);
   const recs=[];
   db.rows.forEach(row=>{
     const t=parseTS(gc(row,iTs)); if(!t) return;
@@ -730,6 +784,7 @@ function computeTeams(tm,db,date,shiftCode){
       else { const pc=extractPc(rawPc);
         if(!pc) rec.label='No PC';
         else { const ok=pcMap[(roomKey(rawRoom)||'')+'_'+pc]||pcMap[pc]; if(ok) rec.team=ok; else rec.label='Unmatched PC'; } } }
+    if(!rec.team&&(rec.label==='No PC'||rec.label==='Unmatched PC')){ const k=emailMap[String(gc(row,iEmD)||'').trim().toLowerCase()]; if(k&&allowed[k]){ rec.team=k; rec.label=null; } }
     recs.push(rec);
   });
   return { recs, keys, owners, shift:shiftCode, date };

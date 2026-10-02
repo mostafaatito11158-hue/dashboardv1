@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<base target="_top">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MEEG Productivity</title>
@@ -9,21 +8,20 @@
 :root{
   --bg:#e9efff; --panel:rgba(255,255,255,.62); --line:rgba(15,23,42,.12); --ink:#0f172a; --ink-soft:#475569;
   --chip:rgba(255,255,255,.6); --chip-line:rgba(15,23,42,.14); --acc:#6366f1; --on-acc:#fff; --pop:#fff; --hi:rgba(255,255,255,.9);
-  --good:#047857; --bad:#be123c; --warn:#b45309; --m:#b45309; --n:#1d4ed8; --on:#6d28d9;
+  --good:#047857; --bad:#be123c; --m:#b45309; --n:#1d4ed8; --on:#6d28d9;
   --back:radial-gradient(circle at 10% 15%,rgba(99,102,241,.28),transparent 42%),radial-gradient(circle at 90% 80%,rgba(244,114,182,.3),transparent 46%),linear-gradient(135deg,#dbeafe,#e0f2fe);
 }
 [data-theme="dark"]{
   --bg:#1b1147; --panel:rgba(255,255,255,.12); --line:rgba(255,255,255,.25); --ink:#fff; --ink-soft:rgba(255,255,255,.75);
   --chip:rgba(255,255,255,.08); --chip-line:rgba(255,255,255,.22); --acc:#67e8f9; --on-acc:#06222b; --pop:#26305a; --hi:rgba(255,255,255,.25);
-  --good:#6ee7b7; --bad:#fda4af; --warn:#fcd34d; --m:#fde047; --n:#67e8f9; --on:#f9a8d4;
+  --good:#6ee7b7; --bad:#fda4af; --m:#fde047; --n:#67e8f9; --on:#f9a8d4;
   --back:radial-gradient(circle at 12% 18%,rgba(255,64,200,.38),transparent 42%),radial-gradient(circle at 88% 72%,rgba(0,200,255,.38),transparent 46%),linear-gradient(135deg,#1b1147,#0b3b5c);
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--back);background-attachment:fixed;background-color:var(--bg);color:var(--ink);font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px;min-height:100vh}
-.header,.tabs,.panel,.stat,.ss-pop{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.header,.tabs,.panel,.stat{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .header{background:var(--panel);border-bottom:1px solid var(--line);box-shadow:inset 0 1px 0 var(--hi);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.header h1{margin:0;font-size:18px}
-.header .meta{font-size:11px;color:var(--ink-soft)}
+.header h1{margin:0;font-size:18px}.header .meta{font-size:11px;color:var(--ink-soft)}
 .btn{border:1px solid var(--chip-line);border-radius:16px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;background:var(--chip);color:var(--ink);display:inline-flex;align-items:center;gap:5px}
 .btn.dark{background:var(--acc);color:var(--on-acc);border-color:transparent}
 .btn:active{transform:scale(.96)}
@@ -32,10 +30,10 @@ body{margin:0;background:var(--back);background-attachment:fixed;background-colo
 .tab{border:1px solid var(--chip-line);background:var(--chip);border-radius:12px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;color:var(--ink-soft)}
 .tab.active,.pill.on{background:var(--acc);color:var(--on-acc);border-color:transparent}
 .wrap{max-width:1600px;margin:0 auto;padding:14px 16px 40px}
-.panel{background:var(--panel);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--hi);border-radius:12px;margin-bottom:14px}
+.panel{background:var(--panel);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--hi);border-radius:12px;margin-bottom:14px;position:relative}
+.panel.ss-open{z-index:50}
 .panel-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.panel-head h3{margin:0;font-size:14px}
-.panel-body{padding:14px 16px}
+.panel-head h3{margin:0;font-size:14px}.panel-body{padding:14px 16px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .filters select,.filters input{padding:6px 10px;border-radius:8px;border:1px solid var(--chip-line);font-size:12px;background:var(--chip);color:var(--ink)}
 select option{background:var(--pop);color:var(--ink)}
@@ -49,13 +47,10 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .table-wrap{overflow:auto;max-height:520px}
 .stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 16px;text-align:center;min-width:80px}
-.stat b{display:block;font-size:18px;color:var(--acc)}
-.stat span{font-size:9.5px;color:var(--ink-soft);font-weight:700}
+.stat b{display:block;font-size:18px;color:var(--acc)}.stat span{font-size:9.5px;color:var(--ink-soft);font-weight:700}
 .pill{background:var(--chip);border:1px solid var(--chip-line);border-radius:14px;padding:5px 12px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--ink-soft)}
 .badge{background:var(--chip);border:1px solid var(--chip-line);border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700}
-.pass{color:var(--good);font-weight:700}
-.diffbad{color:var(--bad);font-weight:700}
-.loading{padding:30px;text-align:center;color:var(--ink-soft)}
+.pass{color:var(--good);font-weight:700}.diffbad{color:var(--bad);font-weight:700}
 .err{padding:14px;background:rgba(244,63,94,.16);color:var(--bad);border-radius:8px;font-weight:600;white-space:pre-wrap;word-break:break-word}
 .err button{margin-top:8px;border:none;background:var(--bad);color:#000;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700}
 .tagbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
@@ -72,15 +67,21 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .acc-v{color:var(--acc);font-weight:800}
 .ss{position:relative;display:inline-block}
 .ss-btn{padding:6px 10px;border-radius:8px;border:1px solid var(--chip-line);font-size:12px;background:var(--chip);color:var(--ink);cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ss-pop{display:none;position:absolute;top:34px;left:0;z-index:30;width:230px;background:var(--pop);border:1px solid var(--acc);border-radius:10px;padding:6px}
+.ss-pop{display:none;position:absolute;top:34px;left:0;z-index:1000;width:240px;background:var(--pop);border:1px solid var(--acc);border-radius:10px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
 .ss-pop input{width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);margin-bottom:4px;font-size:12px}
 .ss-list{max-height:240px;overflow:auto}
-.ss-list div{padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px}
+.ss-list div{padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--ink)}
 .ss-list div:hover,.ss-list div.on{background:var(--chip-line)}
 .ss-list .none{color:var(--ink-soft);cursor:default}
-#gate{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:var(--back);background-color:var(--bg);padding:20px;text-align:center}
+.loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px;color:var(--ink-soft)}
+.loading::before{content:"";width:46px;height:46px;border-radius:50%;border:4px solid var(--chip-line);border-top-color:var(--acc);border-right-color:#f472b6;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:var(--back);background-color:var(--bg);padding:20px;text-align:center}
 #gate.hide{display:none}
-#gateMsg{white-space:pre-wrap;margin-top:8px;color:var(--ink-soft)}
+.gate-input{width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:14px;margin-bottom:12px;outline:none;transition:.2s}
+.gate-input::placeholder{color:var(--ink-soft)}
+.gate-input:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(103,232,249,.22)}
+.gate-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px #26305a inset}
 </style>
 </head>
 <body>
@@ -88,8 +89,7 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
   <div class="panel" style="padding:28px 32px;max-width:420px;width:100%">
     <h2 style="margin:0 0 4px">⚡ MEEG Productivity</h2>
     <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px">Enter your email to open the dashboard.</p>
-    <input id="gateEmail" type="email" placeholder="you@company.com"
-      style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:13px;margin-bottom:10px">
+    <input id="gateEmail" class="gate-input" type="email" placeholder="you@company.com" autocomplete="off">
     <button class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
     <div id="gateMsg" style="white-space:pre-wrap;margin-top:10px;color:var(--ink-soft);font-size:12.5px"></div>
   </div>
@@ -103,7 +103,6 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
     <button class="btn dark" onclick="refreshAll()">🔄 Refresh</button>
   </div>
 </div>
-
 <div class="tabs" id="tabs">
   <button class="tab active" data-tab="live">📊 Live</button>
   <button class="tab" data-tab="qc">🎯 QC Quality</button>
@@ -111,7 +110,6 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
   <button class="tab" data-tab="fast">⚡ Fast Submits</button>
   <button class="tab" data-tab="teams">📋 Teams Submission</button>
 </div>
-
 <div class="wrap">
   <div id="view-live" class="view"></div>
   <div id="view-qc" class="view" style="display:none"></div>
@@ -124,65 +122,98 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 // ---------- theme ----------
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
-  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
-  try { localStorage.setItem('meeg_theme', t); } catch(e){}
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️ Light' : '🌙 Dark';
+  try{ localStorage.setItem('meeg_theme', t); }catch(e){}
 }
-function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme');
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-(function initTheme(){
-  let saved = 'dark';
-  try { saved = localStorage.getItem('meeg_theme') || 'dark'; } catch(e){}
-  applyTheme(saved);
-})();
+function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark'); }
+(function(){ let s='dark'; try{ s=localStorage.getItem('meeg_theme')||'dark'; }catch(e){} applyTheme(s); })();
 
 // ============================================================
-//  API — بيكلم Apps Script (اللي بقى API JSON بس) عن طريق fetch
+//  API  (⚠️ حط لينك الـ /exec بتاعك هنا)
 // ============================================================
-// ⚠️ حط هنا لينك الـ /exec بتاع الـ Deploy بتاعك (نفس اللينك اللي كنت بتفتحه في المتصفح)
-const API_URL = "PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE";
-
-let CURRENT_EMAIL = '';
-try { CURRENT_EMAIL = localStorage.getItem('meeg_email') || ''; } catch(e){}
+const API_URL = "https://script.google.com/macros/s/AKfycbzJSRJAIi0DdGp3P3QEYHwH_lAD94jl-Qa8rgDe1i8-Ac8iJwD_HetxiUmhqpaA9v43jA/exec";
+const CFG = { DB:'Data Base', QPT:'Quality Per Task', QPL:'Quality Per Labeler', TEAMS:'Teams', EMPTY:'Empty' };
+let CURRENT_EMAIL=''; try{ CURRENT_EMAIL=localStorage.getItem('meeg_email')||''; }catch(e){}
 
 function callApi(action, params){
-  const p = new URLSearchParams({ action, email: CURRENT_EMAIL, ...(params||{}) });
-  return fetch(API_URL + '?' + p.toString())
+  const p = new URLSearchParams({ action, email:CURRENT_EMAIL, ...(params||{}) });
+  return fetch(API_URL+'?'+p.toString())
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(res=>{ if(res && res.error) throw new Error(res.error); return res; });
 }
+const SHEETS = {};
+function getSheet(name, bg){
+  const k = name+(bg?'|bg':'');
+  if(SHEETS[k]) return Promise.resolve(SHEETS[k]);
+  return callApi('sheet',{ name, bg:bg?1:0 }).then(r=>SHEETS[k]=r);
+}
+const optSheet = (n)=>getSheet(n).catch(()=>({headers:[],rows:[]}));
 
 // ---------- helpers ----------
 function esc(s){ return String(s===undefined||s===null?'':s); }
 function fmtPct(v){ return (v===''||v===null||v===undefined||isNaN(v)) ? '-' : (Number(v)<=1 ? (Number(v)*100).toFixed(1)+'%' : Number(v).toFixed(1)); }
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
-function errBox(msg, retryFn){
-  return `<div class="err">⚠️ ${esc(msg)}<br><button onclick="(${retryFn})()">🔁 Retry</button></div>`;
-}
+function errBox(msg, retryFn){ return `<div class="err">⚠️ ${esc(msg)}<br><button onclick="(${retryFn})()">🔁 Retry</button></div>`; }
+const LOADING = '<div class="loading">Loading…</div>';
+function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').trim().toLowerCase(); if(k) m[k]=i; }); return m; }
+function ci(m, names){ for(const n of names){ const k=n.toLowerCase(); if(m[k]!==undefined) return m[k]; } return -1; }
+function gc(r,i){ return i>=0 ? r[i] : ''; }
+function toNum(v){ if(v===''||v==null) return ''; const n=Number(v); return isNaN(n)?'':n; }
+const pad=n=>String(n).padStart(2,'0');
 
-// ---------- shared helpers: shift / search dropdown / totals ----------
+// ---------- الوقت والشيفتات (المصدر الوحيد لقواعد الشيفت) ----------
+// Room 108/106/4th: ON 00:00-07:55 | M 08:00-15:55 | N 16:00-23:55
+// Room 102:         ON 00:30-08:25 | M 08:30-16:25 | N 16:30-00:25 (اليوم التالي بيتحسب N لليوم السابق)
+function parseTS(v){
+  if(v===''||v==null) return null;
+  const s=String(v).trim(); let y,mo,d,h=0,mi=0,se=0,ap='',m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){
+    y=+m[1]; mo=+m[2]; d=+m[3]; h=+(m[4]||0); mi=+(m[5]||0); se=+(m[6]||0); ap=(m[7]||'').toLowerCase();
+  } else if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(?:(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){
+    y=+m[3]; if(+m[1]>12){ d=+m[1]; mo=+m[2]; } else { mo=+m[1]; d=+m[2]; }
+    h=+(m[4]||0); mi=+(m[5]||0); se=+(m[6]||0); ap=(m[7]||'').toLowerCase();
+  } else return null;
+  if(ap==='pm'&&h<12) h+=12; if(ap==='am'&&h===12) h=0;
+  return { date:y+'-'+pad(mo)+'-'+pad(d), mins:h*60+mi, str:y+'-'+pad(mo)+'-'+pad(d)+' '+pad(h)+':'+pad(mi)+':'+pad(se), ms:new Date(y,mo-1,d,h,mi,se) };
+}
+function prevDate(ds){ const p=ds.split('-').map(Number), d=new Date(Date.UTC(p[0],p[1]-1,p[2]-1)); return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate()); }
+function shiftOf(room, t){
+  if(!t) return null;
+  let a=t.mins, date=t.date;
+  if(/102/.test(String(room||''))){ a-=30; if(a<0){ a+=1440; date=prevDate(date); } }
+  return { shift:a<480?'ON':a<960?'M':'N', date };
+}
 function normShift(s){
-  const v = String(s||'').trim().toLowerCase();
-  if(!v) return '—';
+  const v=String(s||'').trim().toLowerCase(); if(!v) return '—';
   if(/over\s*night|\(on\)|^on$/.test(v)) return 'ON';
   if(/morning|\(m\)|^m$/.test(v)) return 'M';
   if(/night|\(n\)|^n$/.test(v)) return 'N';
   return String(s).trim();
 }
+function shiftFromName(name){ const m=String(name||'').match(/(?:^|[^A-Za-z])(ON|M|N)(?:[^A-Za-z]|$)/i); return m?m[1].toUpperCase():''; }
+function cleanName(n){ return n ? String(n).replace(/\s*\([^)]*\)/g,'').replace(/\b(qtc|tl|on|m|n)\b/gi,'').replace(/[-_/\\]/g,' ').replace(/\s+/g,' ').trim() : ''; }
+function normName(n){ return cleanName(n).toLowerCase(); }
+function samePerson(a,b){
+  if(!a||!b) return false; if(a===b) return true;
+  const w1=a.split(' '), w2=b.split(' ');
+  if(w1.length>=2&&w2.length>=2&&w1[0]===w2[0]&&w1[1]===w2[1]) return true;
+  return a.indexOf(b)!==-1||b.indexOf(a)!==-1;
+}
+
+// ---------- shared UI helpers ----------
 function groupCountFn(rows, fn){ const m={}; rows.forEach(r=>{ const k=fn(r)||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
-function closeSS(){ document.querySelectorAll('.ss-pop').forEach(p=>p.style.display='none'); }
+function closeSS(){ document.querySelectorAll('.ss-pop').forEach(p=>p.style.display='none'); document.querySelectorAll('.ss-open').forEach(x=>x.classList.remove('ss-open')); }
 document.addEventListener('click', closeSS);
 function makeSearchable(sel){
-  if(!sel || sel.dataset.ss) return; sel.dataset.ss='1'; sel.style.display='none';
+  if(!sel||sel.dataset.ss) return; sel.dataset.ss='1'; sel.style.display='none';
   const wrap=document.createElement('span'); wrap.className='ss';
   const btn=document.createElement('button'); btn.type='button'; btn.className='ss-btn';
   const pop=document.createElement('div'); pop.className='ss-pop';
   const inp=document.createElement('input'); inp.placeholder='🔎 Search…';
   const list=document.createElement('div'); list.className='ss-list';
-  pop.append(inp, list); wrap.append(btn, pop); sel.after(wrap);
+  pop.append(inp,list); wrap.append(btn,pop); sel.after(wrap);
   const label=()=>{ const o=sel.options[sel.selectedIndex]; btn.textContent=(o?o.text:'')+' ▾'; };
-  const pick=o=>{ sel.value=o.value; label(); pop.style.display='none'; if(sel.onchange) sel.onchange(); };
+  const pick=o=>{ sel.value=o.value; label(); closeSS(); if(sel.onchange) sel.onchange(); };
   const draw=()=>{
     const q=inp.value.trim().toLowerCase(); list.innerHTML='';
     const m=[...sel.options].filter(o=>o.text.toLowerCase().includes(q)).slice(0,300);
@@ -190,561 +221,496 @@ function makeSearchable(sel){
     if(!m.length){ const d=document.createElement('div'); d.className='none'; d.textContent='No match'; list.appendChild(d); }
     list._first=m[0];
   };
-  btn.onclick=e=>{ e.stopPropagation(); const open=pop.style.display==='block'; closeSS(); if(!open){ pop.style.display='block'; inp.value=''; draw(); inp.focus(); } };
+  btn.onclick=e=>{ e.stopPropagation(); const open=pop.style.display==='block'; closeSS(); if(!open){ pop.style.display='block'; const pn=wrap.closest('.panel'); if(pn) pn.classList.add('ss-open'); inp.value=''; draw(); inp.focus(); } };
   inp.oninput=draw; inp.onclick=e=>e.stopPropagation();
-  inp.onkeydown=e=>{ if(e.key==='Enter' && list._first) pick(list._first); if(e.key==='Escape') closeSS(); };
+  inp.onkeydown=e=>{ if(e.key==='Enter'&&list._first) pick(list._first); if(e.key==='Escape') closeSS(); };
   label();
 }
-function wavg(rows, key){
-  let s=0, w=0;
-  rows.forEach(r=>{ const v=r[key]; if(v!=='' && v!==null && v!==undefined && !isNaN(v)){ const t=r.tasks||1; s+=Number(v)*t; w+=t; } });
-  return w ? s/w : '';
+function wavg(rows,key){
+  let s=0,w=0;
+  rows.forEach(r=>{ const v=r[key]; if(v!==''&&v!==null&&v!==undefined&&!isNaN(v)){ const t=r.tasks||1; s+=Number(v)*t; w+=t; } });
+  return w?s/w:'';
 }
 function weekLabel(w){
-  if(!w) return '—';
-  const s=String(w);
-  if(!/^\d{4}-\d{2}-\d{2}/.test(s) && !/^[A-Za-z]{3} [A-Za-z]{3} \d{1,2} \d{4}/.test(s)) return s;
-  const d=new Date(s.length===10 ? s+'T00:00:00' : s);
-  return isNaN(d) ? s : 'Week of '+d.getDate()+' '+d.toLocaleString('en',{month:'short'});
+  if(!w) return '—'; const s=String(w);
+  if(!/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+  const d=new Date(s.substring(0,10)+'T00:00:00');
+  return isNaN(d)?s:'Week of '+d.getDate()+' '+d.toLocaleString('en',{month:'short'});
 }
 function uniqVals(rows,k){ return [...new Set(rows.map(r=>r[k]).filter(Boolean))].sort(); }
-function qfBar(id, rows, st, withLab){
+function qfBar(id, rows, st){
   const opt=a=>a.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   return `<div class="filters" id="${id}"><label>⏱ Shift:</label>${['M','N','ON'].map(s=>`<button class="pill ${st.shift===s?'on':''}" data-s="${s}">${s}</button>`).join('')}
     <select data-k="qtc"><option value="">🔖 All QC</option>${opt(uniqVals(rows,'qtc'))}</select>
-    ${withLab?`<select data-k="labeler"><option value="">👤 All Labelers</option>${opt(uniqVals(rows,'labeler'))}</select>`:''}
     <button class="pill" data-clear="1">✕ Clear</button></div>`;
 }
 function wireQf(id, st, apply, rerender){
   const bar=document.getElementById(id);
   bar.querySelectorAll('select').forEach(s=>{ s.value=st[s.dataset.k]||''; s.onchange=()=>{ st[s.dataset.k]=s.value; apply(); }; makeSearchable(s); });
-  bar.querySelectorAll('.pill[data-s]').forEach(p=>p.onclick=()=>{ st.shift = st.shift===p.dataset.s ? '' : p.dataset.s; bar.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on', x.dataset.s===st.shift)); apply(); });
-  bar.querySelector('[data-clear]').onclick=()=>{ st.shift=''; st.qtc=''; st.labeler=''; rerender(); };
+  bar.querySelectorAll('.pill[data-s]').forEach(p=>p.onclick=()=>{ st.shift=st.shift===p.dataset.s?'':p.dataset.s; bar.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on',x.dataset.s===st.shift)); apply(); });
+  bar.querySelector('[data-clear]').onclick=()=>{ st.shift=''; st.qtc=''; rerender(); };
 }
-// Totals: جدول Shift جنب جدول Workforce (متوسطات بوزن عدد التاسكات)
 function totalsHtml(rows, tva){
-  const mets = tva ? [['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['tva','TVA F1'],['totalAccuracy','TOTAL ACCURACY']]
-                   : [['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['totalAccuracy','TOTAL ACCURACY']];
-  const order = {M:1,N:2,ON:3};
-  const by = {}, wk = {};
-  rows.forEach(r=>{
-    const w=r.week||'—', s=normShift(r.shift);
-    (by[w+'||'+s] = by[w+'||'+s] || {w, s, rows:[]}).rows.push(r);
-    (wk[w] = wk[w] || {w, rows:[]}).rows.push(r);
-  });
-  const tasks = a => a.reduce((s,r)=>s+(r.tasks||0),0);
-  const cell = (a,k,cls)=>`<td class="${cls||''}">${fmtPct(wavg(a,k))}</td>`;
-  const shiftRows = Object.values(by).sort((a,b)=>String(a.w).localeCompare(String(b.w)) || ((order[a.s]||9)-(order[b.s]||9))).map(g=>
+  const mets=tva?[['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['tva','TVA F1'],['totalAccuracy','TOTAL ACCURACY']]
+                :[['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['totalAccuracy','TOTAL ACCURACY']];
+  const order={M:1,N:2,ON:3}, by={}, wk={};
+  rows.forEach(r=>{ const w=r.week||'—', s=normShift(r.shift);
+    (by[w+'||'+s]=by[w+'||'+s]||{w,s,rows:[]}).rows.push(r); (wk[w]=wk[w]||{w,rows:[]}).rows.push(r); });
+  const tasks=a=>a.reduce((s,r)=>s+(r.tasks||0),0);
+  const cell=(a,k,cls)=>`<td class="${cls||''}">${fmtPct(wavg(a,k))}</td>`;
+  const shiftRows=Object.values(by).sort((a,b)=>String(a.w).localeCompare(String(b.w))||((order[a.s]||9)-(order[b.s]||9))).map(g=>
     `<tr><td>${esc(weekLabel(g.w))}</td><td class="sh-${g.s}">${esc(g.s)}</td><td><b>${tasks(g.rows)}</b></td>${mets.map(([k])=>cell(g.rows,k,k==='totalAccuracy'?'sh-'+g.s:'')).join('')}</tr>`).join('');
-  const wfRows = Object.values(wk).sort((a,b)=>String(a.w).localeCompare(String(b.w))).map(g=>
+  const wfRows=Object.values(wk).sort((a,b)=>String(a.w).localeCompare(String(b.w))).map(g=>
     `<tr><td>${esc(weekLabel(g.w))}</td><td><b>${tasks(g.rows)}</b></td>${mets.map(([k])=>cell(g.rows,k,k==='totalAccuracy'?'acc-v':'')).join('')}</tr>`).join('');
-  const head = mets.map(([,l])=>`<th>${l}</th>`).join('');
+  const head=mets.map(([,l])=>`<th>${l}</th>`).join('');
   return `<div class="totals">
     <div class="panel"><div class="panel-head"><h3>📊 Shift</h3></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>WEEK</th><th>SHIFT</th><th>NO. TASKS</th>${head}</tr></thead><tbody>${shiftRows||'<tr><td colspan="9">No data</td></tr>'}</tbody></table></div></div>
     <div class="panel"><div class="panel-head"><h3>👥 Workforce</h3></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>WEEK</th><th>TOTAL NO. TASKS</th>${head}</tr></thead><tbody>${wfRows||'<tr><td colspan="8">No data</td></tr>'}</tbody></table></div></div></div>`;
 }
 
+// أصحاب الأجهزة/الفلاشات من شيتات Teams و Empty (fill-down لـ TL/QTC و Shift)
+function loadOwners(teams, empty){
+  const map={};
+  function load(sh, ykCol, source){
+    if(!sh||!sh.rows.length) return;
+    const c=cmap(sh.headers), iY=ci(c,[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']);
+    let cq='', cs='';
+    sh.rows.forEach(r=>{
+      const q=String(gc(r,iQ)||'').trim(); if(q){ cq=q; cs=shiftFromName(q)||normShift(gc(r,iS)); }
+      const m=String(gc(r,iY)||'').trim().match(/\d{6}/);
+      if(!m||map[m[0]]) return;
+      map[m[0]]={ qtc:cq, shift:cs==='—'?'':cs, pc:String(gc(r,iP)||'').trim(), location:String(gc(r,iL)||'').trim(), source };
+    });
+  }
+  load(teams,'labeler yubikey','Teams'); load(empty,'yubikey','Empty');
+  return map;
+}
+
 // ---------- tabs ----------
 document.getElementById('tabs').addEventListener('click', e=>{
-  const btn = e.target.closest('.tab'); if(!btn) return;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t===btn));
+  const btn=e.target.closest('.tab'); if(!btn) return;
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('active',t===btn));
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
   document.getElementById('view-'+btn.dataset.tab).style.display='block';
   loadTab(btn.dataset.tab);
 });
-const loaded = {};
+const loaded={};
 function loadTab(tab){
-  if(loaded[tab]) return;
-  loaded[tab] = true;
-  if(tab==='live') loadLive();
-  if(tab==='qc') loadQC();
-  if(tab==='teamsq') loadTeamsQ();
-  if(tab==='fast') renderFastForm();
-  if(tab==='teams') renderTeamsForm();
+  if(loaded[tab]) return; loaded[tab]=true;
+  if(tab==='live') loadLive(); if(tab==='qc') loadQC(); if(tab==='teamsq') loadTeamsQ();
+  if(tab==='fast') renderFastForm(); if(tab==='teams') renderTeamsForm();
 }
-function refreshAll(){ Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
-function currentTab(){ return document.querySelector('.tab.active').dataset.tab; }
+function refreshAll(){ Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
+function currentTab(){ return document.querySelector('#tabs .tab.active').dataset.tab; }
 
 // ============================================================
-//  LIVE TAB
+//  LIVE
 // ============================================================
-let liveData = null;
-let liveState = { shifts:new Set(), modalities:new Set(), passes:new Set(), tab:'all', search:'', filters:{ date:'', qtc:'', labeler:'', device:'', queue:'' } };
+const ALL_SHIFTS=["over night","over night 12 h","morning 12 h","night","morning","over shift (m)","over shift (n)","over shift (on)"];
+let liveData=null;
+let liveState={ shifts:new Set(), modalities:new Set(), passes:new Set(), tab:'all', search:'', filters:{date:'',qtc:'',labeler:'',device:'',queue:''} };
 
+function buildLive(db){
+  const H=db.headers, hl=H.map(h=>h.toLowerCase());
+  const shiftI=hl.indexOf('shift'); let tsIdx=hl.indexOf('timestamp'); if(tsIdx<0) tsIdx=hl.findIndex(h=>h.includes('date'));
+  let loc=hl.indexOf('unit'); if(loc<0) loc=hl.indexOf('location');
+  const rows=[];
+  db.rows.forEach(r=>{
+    if(r.every(c=>c===''||c==null)) return;
+    if(shiftI>=0 && !ALL_SHIFTS.includes(String(r[shiftI]||'').trim().toLowerCase())) return;
+    const row=r.slice(0,H.length), t=parseTS(row[tsIdx]);
+    if(t) row[tsIdx]=t.str;
+    const s=t&&shiftOf(loc>=0?row[loc]:'',t);
+    row.sh=s?s.shift:normShift(shiftI>=0?row[shiftI]:'');
+    rows.push(row);
+  });
+  const names=["Shift","Unit","Qtc Name","Yubikey Email","Labeler Name","Pc No","Modality","Queue Name","Pass"];
+  const si={}, so={};
+  names.forEach(n=>{ const i=hl.indexOf(n.toLowerCase()); if(i>=0){ si[n]=i; so[n]=[...new Set(rows.map(r=>String(r[i]||'').trim()).filter(Boolean))].sort(); } });
+  so['Shift']=['M','N','ON'];
+  so['_dates']=[...new Set(rows.map(r=>tsIdx>=0?String(r[tsIdx]||'').substring(0,10):'').filter(x=>/^\d{4}-/.test(x)))].sort().reverse();
+  const locations=loc>=0?[...new Set(rows.map(r=>String(r[loc]||'').trim()).filter(Boolean))].sort():[];
+  return { headers:H.map(h=>h||'—'), rows, slicerIndices:si, slicerOptions:so, tsIdx, locationColIdx:loc, locations };
+}
 function loadLive(){
-  document.getElementById('view-live').innerHTML = '<div class="loading">⏳ Loading live data…</div>';
-  callApi('live')
-    .then(res=>{
-      liveData = res;
-      document.getElementById('updTime').textContent = res.lastUpdated;
-      renderLiveShell();
-    })
-    .catch(e=>{ document.getElementById('view-live').innerHTML = errBox('Failed to load: '+e.message, 'loadLive'); });
+  document.getElementById('view-live').innerHTML=LOADING;
+  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); document.getElementById('updTime').textContent=new Date().toLocaleString(); renderLiveShell(); })
+    .catch(e=>{ document.getElementById('view-live').innerHTML=errBox('Failed to load: '+e.message,'loadLive'); });
 }
-
 function renderLiveShell(){
-  const el = document.getElementById('view-live');
-  const opt = (arr) => (arr||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
-  const roomTabs = (liveData.locations||[]).map(loc => `<button class="tab" data-room="${esc(loc)}">📍 ${esc(loc)}</button>`).join('');
-
-  el.innerHTML = `
+  const el=document.getElementById('view-live');
+  const opt=a=>(a||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  const roomTabs=liveData.locations.map(l=>`<button class="tab" data-room="${esc(l)}">📍 ${esc(l)}</button>`).join('');
+  const so=liveData.slicerOptions;
+  el.innerHTML=`
     <div class="panel"><div class="panel-body">
-      <input id="globalSearch" placeholder="🔎 Search anything… (name, email, task id, device…)"
-        style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--chip-line);margin-bottom:12px;background:var(--chip);color:var(--ink);font-size:13px">
-      <div class="filters" id="shiftChips"></div>
-      <div class="filters" id="modalityChips"></div>
-      <div class="filters" id="passChips"></div>
+      <input id="globalSearch" placeholder="🔎 Search anything… (name, email, task id, device…)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--chip-line);margin-bottom:12px;background:var(--chip);color:var(--ink);font-size:13px">
+      <div class="filters" id="shiftChips"></div><div class="filters" id="modalityChips"></div><div class="filters" id="passChips"></div>
       <div class="filters">
-        <select id="fDate"><option value="">📅 All Dates</option>${opt(liveData.slicerOptions['_dates'])}</select>
-        <select id="fQtc"><option value="">🔖 All QTC</option>${opt(liveData.slicerOptions['Qtc Name'])}</select>
-        <select id="fLabeler"><option value="">👤 All Labelers</option>${opt(liveData.slicerOptions['Labeler Name'])}</select>
-        <select id="fDevice"><option value="">🖥️ All Devices</option>${opt(liveData.slicerOptions['Pc No'])}</select>
-        <select id="fQueue"><option value="">📁 All Queues</option>${opt(liveData.slicerOptions['Queue Name'])}</select>
+        <select id="fDate"><option value="">📅 All Dates</option>${opt(so['_dates'])}</select>
+        <select id="fQtc"><option value="">🔖 All QTC</option>${opt(so['Qtc Name'])}</select>
+        <select id="fLabeler"><option value="">👤 All Labelers</option>${opt(so['Labeler Name'])}</select>
+        <select id="fDevice"><option value="">🖥️ All Devices</option>${opt(so['Pc No'])}</select>
+        <select id="fQueue"><option value="">📁 All Queues</option>${opt(so['Queue Name'])}</select>
         <button class="pill" onclick="clearLiveFilters()">✕ Clear All</button>
       </div>
       <div class="tagbar" id="activeTags"></div>
     </div></div>
-
     <div class="tabs" id="roomTabs" style="border-radius:12px;border:1px solid var(--line);margin-bottom:14px">
-      <button class="tab active" data-room="all">🌐 All</button>
-      <button class="tab" data-room="__total__">📊 Total Submit</button>
-      <button class="tab" data-room="__top__">🏆 Top Performers</button>
-      ${roomTabs}
+      <button class="tab active" data-room="all">🌐 All</button><button class="tab" data-room="__total__">📊 Total Submit</button><button class="tab" data-room="__top__">🏆 Top Performers</button>${roomTabs}
     </div>
-
     <div id="liveBody"></div>`;
-
-  document.getElementById('shiftChips').innerHTML = '<label style="align-self:center">⏱ Shift:</label>' +
-    (liveData.slicerOptions['Shift']||[]).map(s=>`<span class="pill ${liveState.shifts.has(s)?'on':''}" data-shift="${esc(s)}">${esc(s)}</span>`).join('');
-  document.getElementById('modalityChips').innerHTML = '<label style="align-self:center">🔬 Modality:</label>' +
-    (liveData.slicerOptions['Modality']||[]).map(s=>`<span class="pill ${liveState.modalities.has(s)?'on':''}" data-modality="${esc(s)}">${esc(s)}</span>`).join('');
-  document.getElementById('passChips').innerHTML = '<label style="align-self:center">✅ Pass:</label>' +
-    (liveData.slicerOptions['Pass']||[]).map(s=>`<span class="pill ${liveState.passes.has(s)?'on':''}" data-pass="${esc(s)}">${esc(s)}</span>`).join('');
-
-  const fm = { fDate:'date', fQtc:'qtc', fLabeler:'labeler', fDevice:'device', fQueue:'queue' };
+  const chips=(id,label,arr,set,attr)=>{
+    document.getElementById(id).innerHTML=`<label style="align-self:center">${label}</label>`+(arr||[]).map(s=>`<span class="pill ${set.has(s)?'on':''}" data-v="${esc(s)}">${esc(s)}</span>`).join('');
+    document.getElementById(id).addEventListener('click',e=>{ const p=e.target.closest('.pill'); if(!p) return; const v=p.dataset.v; set.has(v)?set.delete(v):set.add(v); p.classList.toggle('on'); renderLiveBody(); });
+  };
+  chips('shiftChips','⏱ Shift:',so['Shift'],liveState.shifts); chips('modalityChips','🔬 Modality:',so['Modality'],liveState.modalities); chips('passChips','✅ Pass:',so['Pass'],liveState.passes);
+  const fm={fDate:'date',fQtc:'qtc',fLabeler:'labeler',fDevice:'device',fQueue:'queue'};
   Object.entries(fm).forEach(([id,k])=>{ const s=document.getElementById(id); s.value=liveState.filters[k]||''; s.onchange=onLiveFilterChange; });
   ['fQtc','fLabeler','fDevice','fQueue'].forEach(id=>makeSearchable(document.getElementById(id)));
-  const searchDebounced = debounce(()=>{ liveState.search = document.getElementById('globalSearch').value.toLowerCase(); renderLiveBody(); }, 250);
-  document.getElementById('globalSearch').value = liveState.search;
-  document.getElementById('globalSearch').oninput = searchDebounced;
-
-  document.getElementById('shiftChips').addEventListener('click', e=>{
-    const p = e.target.closest('.pill'); if(!p) return;
-    const v = p.dataset.shift;
-    if(liveState.shifts.has(v)) liveState.shifts.delete(v); else liveState.shifts.add(v);
-    p.classList.toggle('on');
-    renderLiveBody();
+  const g=document.getElementById('globalSearch'); g.value=liveState.search;
+  g.oninput=debounce(()=>{ liveState.search=g.value.toLowerCase(); renderLiveBody(); },250);
+  document.getElementById('roomTabs').addEventListener('click',e=>{
+    const b=e.target.closest('.tab'); if(!b) return;
+    document.querySelectorAll('#roomTabs .tab').forEach(t=>t.classList.toggle('active',t===b));
+    liveState.tab=b.dataset.room; renderLiveBody();
   });
-  document.getElementById('modalityChips').addEventListener('click', e=>{
-    const p = e.target.closest('.pill'); if(!p) return;
-    const v = p.dataset.modality;
-    if(liveState.modalities.has(v)) liveState.modalities.delete(v); else liveState.modalities.add(v);
-    p.classList.toggle('on');
-    renderLiveBody();
-  });
-  document.getElementById('passChips').addEventListener('click', e=>{
-    const p = e.target.closest('.pill'); if(!p) return;
-    const v = p.dataset.pass;
-    if(liveState.passes.has(v)) liveState.passes.delete(v); else liveState.passes.add(v);
-    p.classList.toggle('on');
-    renderLiveBody();
-  });
-  document.getElementById('roomTabs').addEventListener('click', e=>{
-    const b = e.target.closest('.tab'); if(!b) return;
-    document.querySelectorAll('#roomTabs .tab').forEach(t=>t.classList.toggle('active', t===b));
-    liveState.tab = b.dataset.room;
-    renderLiveBody();
-  });
-
   renderLiveBody();
 }
-
 function onLiveFilterChange(){
-  liveState.filters.date = document.getElementById('fDate').value;
-  liveState.filters.qtc = document.getElementById('fQtc').value;
-  liveState.filters.labeler = document.getElementById('fLabeler').value;
-  liveState.filters.device = document.getElementById('fDevice').value;
-  liveState.filters.queue = document.getElementById('fQueue').value;
-  renderLiveBody();
+  const f=liveState.filters;
+  f.date=document.getElementById('fDate').value; f.qtc=document.getElementById('fQtc').value; f.labeler=document.getElementById('fLabeler').value;
+  f.device=document.getElementById('fDevice').value; f.queue=document.getElementById('fQueue').value; renderLiveBody();
 }
-function clearLiveFilters(){
-  liveState = { shifts:new Set(), modalities:new Set(), passes:new Set(), tab:'all', search:'', filters:{ date:'', qtc:'', labeler:'', device:'', queue:'' } };
-  renderLiveShell();
-}
-
+function clearLiveFilters(){ liveState={shifts:new Set(),modalities:new Set(),passes:new Set(),tab:'all',search:'',filters:{date:'',qtc:'',labeler:'',device:'',queue:''}}; renderLiveShell(); }
 function getFilteredLiveRows(){
-  const si = liveData.slicerIndices;
-  const tsIdx = liveData.tsIdx;
-  let rows = liveData.rows;
-  if(liveState.shifts.size > 0) rows = rows.filter(r=>liveState.shifts.has(r[si['Shift']]));
-  if(liveState.modalities.size > 0) rows = rows.filter(r=>liveState.modalities.has(r[si['Modality']]));
-  if(liveState.passes.size > 0) rows = rows.filter(r=>liveState.passes.has(r[si['Pass']]));
-  if(liveState.filters.date) rows = rows.filter(r=> String(r[tsIdx]||'').startsWith(liveState.filters.date));
-  if(liveState.filters.qtc) rows = rows.filter(r=>r[si['Qtc Name']]===liveState.filters.qtc);
-  if(liveState.filters.labeler) rows = rows.filter(r=>r[si['Labeler Name']]===liveState.filters.labeler);
-  if(liveState.filters.device) rows = rows.filter(r=>r[si['Pc No']]===liveState.filters.device);
-  if(liveState.filters.queue) rows = rows.filter(r=>r[si['Queue Name']]===liveState.filters.queue);
-  if(liveState.tab && liveState.tab !== 'all' && liveState.tab !== '__total__' && liveState.tab !== '__top__' && liveData.locationColIdx >= 0){
-    rows = rows.filter(r=>r[liveData.locationColIdx]===liveState.tab);
-  }
-  if(liveState.search) rows = rows.filter(r=>r.some(c=>String(c).toLowerCase().includes(liveState.search)));
+  const si=liveData.slicerIndices, F=liveState.filters; let rows=liveData.rows;
+  if(liveState.shifts.size) rows=rows.filter(r=>liveState.shifts.has(r.sh));
+  if(liveState.modalities.size) rows=rows.filter(r=>liveState.modalities.has(r[si['Modality']]));
+  if(liveState.passes.size) rows=rows.filter(r=>liveState.passes.has(r[si['Pass']]));
+  if(F.date) rows=rows.filter(r=>String(r[liveData.tsIdx]||'').startsWith(F.date));
+  if(F.qtc) rows=rows.filter(r=>r[si['Qtc Name']]===F.qtc);
+  if(F.labeler) rows=rows.filter(r=>r[si['Labeler Name']]===F.labeler);
+  if(F.device) rows=rows.filter(r=>r[si['Pc No']]===F.device);
+  if(F.queue) rows=rows.filter(r=>r[si['Queue Name']]===F.queue);
+  if(!['all','__total__','__top__'].includes(liveState.tab) && liveData.locationColIdx>=0) rows=rows.filter(r=>r[liveData.locationColIdx]===liveState.tab);
+  if(liveState.search) rows=rows.filter(r=>r.some(c=>String(c).toLowerCase().includes(liveState.search)));
   return rows;
 }
-
 function renderActiveTags(){
-  const tags = [];
-  if(liveState.search) tags.push(['Search: '+liveState.search, ()=>{liveState.search=''; renderLiveShell();}]);
-  liveState.shifts.forEach(s=>tags.push(['Shift: '+s, ()=>{liveState.shifts.delete(s); renderLiveShell();}]));
-  liveState.modalities.forEach(s=>tags.push(['Modality: '+s, ()=>{liveState.modalities.delete(s); renderLiveShell();}]));
-  liveState.passes.forEach(s=>tags.push(['Pass: '+s, ()=>{liveState.passes.delete(s); renderLiveShell();}]));
-  Object.entries(liveState.filters).forEach(([k,v])=>{ if(v) tags.push([k+': '+v, ()=>{liveState.filters[k]=''; renderLiveShell();}]); });
-  const box = document.getElementById('activeTags');
-  if(!box) return;
-  if(tags.length===0){ box.innerHTML=''; return; }
-  box.innerHTML = tags.map((t,i)=>`<span class="tag">${esc(t[0])} <button onclick="window.__tagRemove${i}()">✕</button></span>`).join('');
-  tags.forEach((t,i)=>{ window['__tagRemove'+i] = t[1]; });
+  const tags=[];
+  if(liveState.search) tags.push(['Search: '+liveState.search,()=>{liveState.search='';renderLiveShell();}]);
+  liveState.shifts.forEach(s=>tags.push(['Shift: '+s,()=>{liveState.shifts.delete(s);renderLiveShell();}]));
+  liveState.modalities.forEach(s=>tags.push(['Modality: '+s,()=>{liveState.modalities.delete(s);renderLiveShell();}]));
+  liveState.passes.forEach(s=>tags.push(['Pass: '+s,()=>{liveState.passes.delete(s);renderLiveShell();}]));
+  Object.entries(liveState.filters).forEach(([k,v])=>{ if(v) tags.push([k+': '+v,()=>{liveState.filters[k]='';renderLiveShell();}]); });
+  const box=document.getElementById('activeTags'); if(!box) return;
+  box.innerHTML=tags.map((t,i)=>`<span class="tag">${esc(t[0])} <button onclick="window.__tg${i}()">✕</button></span>`).join('');
+  tags.forEach((t,i)=>{ window['__tg'+i]=t[1]; });
 }
-
+function groupCount(rows,idx){ const m={}; rows.forEach(r=>{ const k=r[idx]||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function renderLiveBody(){
   renderActiveTags();
-  const rows = getFilteredLiveRows();
-  const si = liveData.slicerIndices;
-  const body = document.getElementById('liveBody');
-
-  if(liveState.tab === '__total__'){ body.innerHTML = renderTotalSubmitView(rows, si); return; }
-  if(liveState.tab === '__top__'){ body.innerHTML = renderTopPerformersView(rows, si); return; }
-
-  const uniq = (idx) => new Set(rows.map(r=>r[idx]).filter(Boolean)).size;
-  const devices = {};
+  const rows=getFilteredLiveRows(), si=liveData.slicerIndices, body=document.getElementById('liveBody');
+  if(liveState.tab==='__total__'){ body.innerHTML=renderTotalSubmitView(rows,si); return; }
+  if(liveState.tab==='__top__'){ body.innerHTML=renderTopPerformersView(rows,si); return; }
+  const uniq=i=>new Set(rows.map(r=>r[i]).filter(Boolean)).size;
+  const devices={}, qt={}, mc={}, pc={};
   rows.forEach(r=>{
-    const d = r[si['Pc No']]; if(!d) return;
-    if(!devices[d]) devices[d] = { count:0, labeler:r[si['Labeler Name']], email:r[si['Yubikey Email']], queues:{} };
-    devices[d].count++;
-    const q = r[si['Queue Name']];
-    devices[d].queues[q] = (devices[d].queues[q]||0)+1;
+    const d=r[si['Pc No']];
+    if(d){ if(!devices[d]) devices[d]={count:0,labeler:r[si['Labeler Name']],email:r[si['Yubikey Email']]}; devices[d].count++; }
+    const q=r[si['Queue Name']]||'—', m=r[si['Modality']]||'—', p=r[si['Pass']]||'—';
+    qt[q]=qt[q]||{}; qt[q][m+'|'+p]=(qt[q][m+'|'+p]||0)+1; mc[m]=(mc[m]||0)+1; pc[p]=(pc[p]||0)+1;
   });
-
-  const queueTotals = {};
-  rows.forEach(r=>{
-    const q = r[si['Queue Name']] || '—';
-    const mod = r[si['Modality']] || '—';
-    const pass = r[si['Pass']] || '—';
-    queueTotals[q] = queueTotals[q] || {};
-    const key = mod+'|'+pass;
-    queueTotals[q][key] = (queueTotals[q][key]||0)+1;
-  });
-
-  const modCounts = {}, passCounts = {};
-  rows.forEach(r=>{
-    const m = r[si['Modality']] || '—'; modCounts[m] = (modCounts[m]||0)+1;
-    const p = r[si['Pass']] || '—'; passCounts[p] = (passCounts[p]||0)+1;
-  });
-
-  body.innerHTML = `
-    <div class="stat-row">
-      <div class="stat"><b>${rows.length}</b><span>TOTAL ROWS</span></div>
-      <div class="stat"><b>${uniq(si['Pc No'])}</b><span>DEVICES</span></div>
-      <div class="stat"><b>${uniq(si['Queue Name'])}</b><span>QUEUES</span></div>
-      <div class="stat"><b>${uniq(si['Labeler Name'])}</b><span>LABELERS</span></div>
-    </div>
-    <div class="stat-row">
-      ${Object.entries(modCounts).map(([k,n])=>`<div class="stat"><b>${n}</b><span>🔬 ${esc(k).toUpperCase()}</span></div>`).join('')}
-      ${Object.entries(passCounts).map(([k,n])=>`<div class="stat"><b>${n}</b><span>✅ ${esc(k).toUpperCase()}</span></div>`).join('')}
-    </div>
-
-    <div class="panel"><div class="panel-head"><h3>🖥️ Device Submit Counts</h3><span>${Object.keys(devices).length} devices</span></div>
-    <div class="panel-body"><div class="grid-cards">
-      ${Object.entries(devices).map(([d,info])=>`
-        <div class="card">
-          <div style="display:flex;justify-content:space-between"><b>${esc(d)}</b><span class="badge">${info.count}</span></div>
-          <div style="font-size:11.5px;margin-top:4px">👤 ${esc(info.labeler)}</div>
-          <div style="font-size:10.5px;color:var(--ink-soft)">✉️ ${esc(info.email)}</div>
-        </div>`).join('') || '<span style="color:var(--ink-soft)">No devices</span>'}
+  body.innerHTML=`
+    <div class="stat-row"><div class="stat"><b>${rows.length}</b><span>TOTAL ROWS</span></div><div class="stat"><b>${uniq(si['Pc No'])}</b><span>DEVICES</span></div><div class="stat"><b>${uniq(si['Queue Name'])}</b><span>QUEUES</span></div><div class="stat"><b>${uniq(si['Labeler Name'])}</b><span>LABELERS</span></div></div>
+    <div class="stat-row">${Object.entries(mc).map(([k,n])=>`<div class="stat"><b>${n}</b><span>🔬 ${esc(k).toUpperCase()}</span></div>`).join('')}${Object.entries(pc).map(([k,n])=>`<div class="stat"><b>${n}</b><span>✅ ${esc(k).toUpperCase()}</span></div>`).join('')}</div>
+    <div class="panel"><div class="panel-head"><h3>🖥️ Device Submit Counts</h3><span>${Object.keys(devices).length} devices</span></div><div class="panel-body"><div class="grid-cards">
+      ${Object.entries(devices).map(([d,i])=>`<div class="card"><div style="display:flex;justify-content:space-between"><b>${esc(d)}</b><span class="badge">${i.count}</span></div><div style="font-size:11.5px;margin-top:4px">👤 ${esc(i.labeler)}</div><div style="font-size:10.5px;color:var(--ink-soft)">✉️ ${esc(i.email)}</div></div>`).join('')||'<span style="color:var(--ink-soft)">No devices</span>'}
     </div></div></div>
-
-    <div class="panel"><div class="panel-head"><h3>📁 Queue — Total Submits</h3><span>${Object.keys(queueTotals).length} queues</span></div>
-    <div class="panel-body table-wrap"><table>
-      <thead><tr><th>Queue</th><th>Modality</th><th>Pass</th><th>Count</th></tr></thead>
-      <tbody>${Object.entries(queueTotals).flatMap(([q,combos])=>Object.entries(combos).map(([k,n])=>{
-        const [mod,pass]=k.split('|');
-        return `<tr><td>${esc(q)}</td><td>${esc(mod)}</td><td>${esc(pass)}</td><td><b>${n}</b></td></tr>`;
-      })).join('') || '<tr><td colspan="4">No data</td></tr>'}</tbody>
-    </table></div></div>
-
-    <div class="panel"><div class="panel-head"><h3>📋 Row Detail</h3><span>${rows.length} rows (showing up to 300)</span></div>
-    <div class="panel-body">
-      <div class="table-wrap"><table><thead><tr>${liveData.headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead>
-      <tbody>${rows.slice(0,300).map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')}</tbody></table></div>
-    </div></div>`;
+    <div class="panel"><div class="panel-head"><h3>📁 Queue — Total Submits</h3><span>${Object.keys(qt).length} queues</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Queue</th><th>Modality</th><th>Pass</th><th>Count</th></tr></thead><tbody>
+      ${Object.entries(qt).flatMap(([q,c])=>Object.entries(c).map(([k,n])=>{ const [m,p]=k.split('|'); return `<tr><td>${esc(q)}</td><td>${esc(m)}</td><td>${esc(p)}</td><td><b>${n}</b></td></tr>`; })).join('')||'<tr><td colspan="4">No data</td></tr>'}</tbody></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>📋 Row Detail</h3><span>${rows.length} rows (showing up to 300)</span></div><div class="panel-body"><div class="table-wrap"><table><thead><tr>${liveData.headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.slice(0,300).map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')}</tbody></table></div></div></div>`;
 }
-
-function groupCount(rows, idx){
-  const m = {};
-  rows.forEach(r=>{ const k = r[idx] || '—'; m[k] = (m[k]||0)+1; });
-  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
-}
-function renderTotalSubmitView(rows, si){
-  const groups = [
-    ['👤 By Labeler', si['Labeler Name']],
-    ['🔖 By QC', si['Qtc Name']],
-    ['📍 By Room', liveData.locationColIdx],
-    ['⏱ By Shift', si['Shift']],
-    ['📁 By Queue', si['Queue Name']]
-  ];
-  return groups.map(([title, idx])=>{
-    if(idx===undefined || idx<0) return '';
-    const data = (idx===si['Shift']) ? groupCountFn(rows, r=>normShift(r[idx])) : groupCount(rows, idx);
-    return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${data.length} items</span></div>
-    <div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th></tr></thead>
-    <tbody>${data.map(([k,n])=>`<tr><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('') || '<tr><td colspan="2">No data</td></tr>'}</tbody></table></div></div>`;
+function renderTotalSubmitView(rows,si){
+  const groups=[['👤 By Labeler',si['Labeler Name']],['🔖 By QC',si['Qtc Name']],['📍 By Room',liveData.locationColIdx],['⏱ By Shift',-2],['📁 By Queue',si['Queue Name']]];
+  return groups.map(([t,idx])=>{
+    if(idx===undefined||idx===-1) return '';
+    const data=idx===-2?groupCountFn(rows,r=>r.sh):groupCount(rows,idx);
+    return `<div class="panel"><div class="panel-head"><h3>${t}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n])=>`<tr><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="2">No data</td></tr>'}</tbody></table></div></div>`;
   }).join('');
 }
-function renderTopPerformersView(rows, si){
-  const data = groupCount(rows, si['Labeler Name']).slice(0,20);
-  const medals = ['🥇','🥈','🥉'];
-  return `<div class="panel"><div class="panel-head"><h3>🏆 Top Performers (Labelers)</h3><span>Top ${data.length}</span></div>
-  <div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>Labeler</th><th>Total Submits</th></tr></thead>
-  <tbody>${data.map(([k,n],i)=>`<tr><td><span class="rank">${medals[i]||(i+1)}</span></td><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('') || '<tr><td colspan="3">No data</td></tr>'}</tbody></table></div></div>`;
+function renderTopPerformersView(rows,si){
+  const data=groupCount(rows,si['Labeler Name']).slice(0,20), med=['🥇','🥈','🥉'];
+  return `<div class="panel"><div class="panel-head"><h3>🏆 Top Performers (Labelers)</h3><span>Top ${data.length}</span></div><div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>Labeler</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n],i)=>`<tr><td><span class="rank">${med[i]||(i+1)}</span></td><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}</tbody></table></div></div>`;
 }
 
 // ============================================================
-//  QC QUALITY  (Totals: Shift + Workforce مع TVA F1)
+//  QC QUALITY — Quality Per Task × Data Base (Actual ID) + fallback Actual Email → Teams
 // ============================================================
-let qcData = null, qcSt = { shift:'', qtc:'', labeler:'' };
-function qcRowsAll(){ return qcData.rows.map(r=>({...r, week:qcData.weekTag, tasks:1, shiftN:normShift(r.shift)})); }
+let qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='totals';
+function buildQC(qpt, db, teams, empty){
+  const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']),
+        iArt=ci(q,['artifacts']), iAttr=ci(q,['attribute']), iAcc=ci(q,['total accuracy']);
+  const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']);
+  const byTask={};
+  db.rows.forEach(r=>{
+    const id=String(gc(r,iT)||'').trim(); if(!id) return;
+    const isQA=/QA|QUALITY/i.test(String(gc(r,iP)||''));
+    if(!byTask[id]||isQA) byTask[id]={ qtc:String(gc(r,iQ)||'').trim(), ts:gc(r,iTs), unit:gc(r,iU), labeler:String(gc(r,iL)||'').trim() };
+  });
+  const owners=loadOwners(teams,empty); let minExp='';
+  const rows=[];
+  qpt.rows.forEach(r=>{
+    const id=String(gc(r,iId)||'').trim(); if(!id) return;
+    const ex=String(gc(r,iExp)||'').substring(0,10); if(ex&&(!minExp||ex<minExp)) minExp=ex;
+    const base={ taskId:id, tasks:1, artifacts:toNum(gc(r,iArt)), attribute:toNum(gc(r,iAttr)), totalAccuracy:toNum(gc(r,iAcc)) };
+    const t=byTask[id];
+    if(t){
+      const s=shiftOf(t.unit,parseTS(t.ts));
+      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:s?s.shift:(normShift(shiftFromName(t.qtc))||'—'), labeler:t.labeler, source:'Data Base'});
+    } else {
+      const em=String(gc(r,iEm)||''), m=em.match(/\d{6}/), o=m&&owners[m[0]];
+      if(o) rows.push({...base, qtc:cleanName(o.qtc)||'—', shiftN:o.shift||'—', labeler:em, source:'Teams'});
+      else rows.push({...base, qtc:'—', shiftN:'—', labeler:em, source:'Unmatched'});
+    }
+  });
+  return { rows, weekTag:minExp };
+}
 function loadQC(){
-  document.getElementById('view-qc').innerHTML = '<div class="loading">⏳ Loading…</div>';
-  callApi('qc')
-    .then(res=>{ qcData = res; renderQC(); })
-    .catch(e=>{ document.getElementById('view-qc').innerHTML = errBox(e.message, 'loadQC'); });
+  document.getElementById('view-qc').innerHTML=LOADING;
+  Promise.all([getSheet(CFG.QPT),getSheet(CFG.DB),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY)])
+    .then(([a,b,c,e])=>{ const r=buildQC(a,b,c,e); qcRowsData=r.rows; qcWeek=r.weekTag; renderQC(); })
+    .catch(e=>{ document.getElementById('view-qc').innerHTML=errBox(e.message,'loadQC'); });
 }
 function renderQC(){
-  document.getElementById('view-qc').innerHTML = `
-    <div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcData.weekTag))}</h3><span id="qcCount"></span></div>
-    <div class="panel-body">${qfBar('qcBar', qcRowsAll(), qcSt, true)}</div></div>
-    <div id="qcTotals"></div>
-    <div class="panel"><div class="panel-head"><h3>🔎 Breakdown</h3></div><div class="panel-body">
-      <div class="filters"><label>Group by:</label><select id="qcGroupBy"><option value="qtc">QTC</option><option value="shiftN">Shift</option><option value="labeler">Labeler</option></select></div>
-      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>TVA F1</th><th>Total Accuracy</th></tr></thead><tbody id="qcBody"></tbody></table></div>
-    </div></div>`;
-  document.getElementById('qcGroupBy').onchange = renderQCBody;
-  wireQf('qcBar', qcSt, renderQCBody, renderQC);
-  renderQCBody();
+  const el=document.getElementById('view-qc'); qcView='totals';
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcWeek))}</h3><span id="qcCount"></span></div><div class="panel-body">
+    <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button></div>
+    ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}</div></div><div id="qcContent"></div>`;
+  document.getElementById('qcViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; qcView=b.dataset.view;
+    el.querySelectorAll('#qcViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderQCContent(); };
+  wireQf('qcBar',qcSt,renderQCContent,renderQC); renderQCContent();
 }
-function renderQCBody(){
-  const rows = qcRowsAll().filter(r=>(!qcSt.shift||r.shiftN===qcSt.shift)&&(!qcSt.qtc||r.qtc===qcSt.qtc)&&(!qcSt.labeler||r.labeler===qcSt.labeler));
-  document.getElementById('qcCount').textContent = rows.length+' tasks';
-  document.getElementById('qcTotals').innerHTML = totalsHtml(rows.map(r=>({...r, shift:r.shiftN})), true);
-  const by = document.getElementById('qcGroupBy').value, g = {};
-  rows.forEach(r=>{ const k=r[by]||'—'; (g[k]=g[k]||[]).push(r); });
-  const html = Object.keys(g).sort().map(k=>`<tr><td>${esc(k)}</td><td>${g[k].length}</td><td>${fmtPct(wavg(g[k],'artifacts'))}</td><td>${fmtPct(wavg(g[k],'attribute'))}</td><td>${fmtPct(wavg(g[k],'tva'))}</td><td>${fmtPct(wavg(g[k],'totalAccuracy'))}</td></tr>`).join('');
-  document.getElementById('qcBody').innerHTML = html || '<tr><td colspan="6">No matching data</td></tr>';
+function renderQCContent(){
+  const rows=qcRowsData.filter(r=>(!qcSt.shift||r.shiftN===qcSt.shift)&&(!qcSt.qtc||r.qtc===qcSt.qtc)).map(r=>({...r,week:qcWeek}));
+  document.getElementById('qcCount').textContent=rows.length+' tasks';
+  const box=document.getElementById('qcContent');
+  if(qcView==='individual'){
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>QC</th><th>Shift</th><th>Labeler</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.taskId)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.labeler)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
+  }
+  if(qcView==='qc'){
+    const g={}; rows.forEach(r=>{ const k=r.qtc+'||'+r.shiftN; (g[k]=g[k]||{qtc:r.qtc,sh:r.shiftN,rows:[]}).rows.push(r); });
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>QC</th><th>Shift</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${Object.values(g).sort((a,b)=>(a.qtc+a.sh).localeCompare(b.qtc+b.sh)).map(x=>`<tr><td>${esc(x.qtc)}</td><td class="sh-${x.sh}">${esc(x.sh)}</td><td>${x.rows.length}</td><td>${fmtPct(wavg(x.rows,'artifacts'))}</td><td>${fmtPct(wavg(x.rows,'attribute'))}</td><td>${fmtPct(wavg(x.rows,'totalAccuracy'))}</td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}</tbody></table></div></div>`; return;
+  }
+  box.innerHTML=totalsHtml(rows.map(r=>({...r,shift:r.shiftN})),false);
 }
 
 // ============================================================
-//  TEAMS QUALITY  (Totals: Shift + Workforce من غير TVA F1)
+//  TEAMS QUALITY — Quality Per Labeler
 // ============================================================
-let teamsQData = null, tqSt = { shift:'', qtc:'' }, tqView = 'totals';
-function loadTeamsQ(){
-  document.getElementById('view-teamsq').innerHTML = '<div class="loading">⏳ Loading…</div>';
-  callApi('teamsq')
-    .then(res=>{ teamsQData = res; renderTeamsQ(); })
-    .catch(e=>{ document.getElementById('view-teamsq').innerHTML = errBox(e.message, 'loadTeamsQ'); });
+let tqData=null, tqSt={shift:'',qtc:''}, tqView='totals';
+function buildTQ(qpl,teams,empty){
+  const q=cmap(qpl.headers), iLab=ci(q,['labeler']), iW=ci(q,['week']), iT=ci(q,['tasks']), iA=ci(q,['artifacts']), iAt=ci(q,['attribute']), iAc=ci(q,['total accuracy']);
+  const owners=loadOwners(teams,empty), rows=[];
+  qpl.rows.forEach(r=>{
+    const raw=String(gc(r,iLab)||'').trim(); if(!raw) return;
+    const m=raw.match(/\d{6}/), o=m?owners[m[0]]:null;
+    rows.push({ labelerRaw:raw, week:String(gc(r,iW)||'').substring(0,10), qtc:o?cleanName(o.qtc):'', shiftN:o?(o.shift||'—'):'—', location:o?o.location:'', source:o?o.source:'Unmatched',
+      tasks:Number(toNum(gc(r,iT)))||0, artifacts:toNum(gc(r,iA)), attribute:toNum(gc(r,iAt)), totalAccuracy:toNum(gc(r,iAc)) });
+  });
+  return rows;
 }
-function tqRows(){ return teamsQData.rows.map(r=>({...r, shiftN:normShift(r.shift), tasks:Number(r.tasks)||0})); }
+function loadTeamsQ(){
+  document.getElementById('view-teamsq').innerHTML=LOADING;
+  Promise.all([getSheet(CFG.QPL),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY)])
+    .then(([a,b,c])=>{ tqData=buildTQ(a,b,c); renderTeamsQ(); })
+    .catch(e=>{ document.getElementById('view-teamsq').innerHTML=errBox(e.message,'loadTeamsQ'); });
+}
 function renderTeamsQ(){
-  const el = document.getElementById('view-teamsq'); tqView = 'totals';
-  el.innerHTML = `
-    <div class="panel"><div class="panel-head"><h3>👥 Teams Quality</h3><span id="tqCount"></span></div><div class="panel-body">
-      <div class="filters" id="tqViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">👤 Individual</button></div>
-      ${qfBar('tqBar', tqRows(), tqSt, false)}
-    </div></div><div id="tqContent"></div>`;
-  document.getElementById('tqViews').onclick = e=>{
-    const b = e.target.closest('.pill'); if(!b) return;
-    tqView = b.dataset.view;
-    el.querySelectorAll('#tqViews .pill').forEach(p=>p.classList.toggle('on', p===b));
-    renderTeamsQContent();
-  };
-  wireQf('tqBar', tqSt, renderTeamsQContent, renderTeamsQ);
-  renderTeamsQContent();
+  const el=document.getElementById('view-teamsq'); tqView='totals';
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>👥 Teams Quality</h3><span id="tqCount"></span></div><div class="panel-body">
+    <div class="filters" id="tqViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">👤 Individual</button></div>
+    ${qfBar('tqBar',tqData,tqSt)}</div></div><div id="tqContent"></div>`;
+  document.getElementById('tqViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; tqView=b.dataset.view;
+    el.querySelectorAll('#tqViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderTeamsQContent(); };
+  wireQf('tqBar',tqSt,renderTeamsQContent,renderTeamsQ); renderTeamsQContent();
 }
 function renderTeamsQContent(){
-  const rows = tqRows().filter(r=>(!tqSt.shift||r.shiftN===tqSt.shift)&&(!tqSt.qtc||r.qtc===tqSt.qtc));
-  document.getElementById('tqCount').textContent = rows.length+' flashes';
-  const box = document.getElementById('tqContent');
+  const rows=tqData.filter(r=>(!tqSt.shift||r.shiftN===tqSt.shift)&&(!tqSt.qtc||r.qtc===tqSt.qtc));
+  document.getElementById('tqCount').textContent=rows.length+' flashes';
+  const box=document.getElementById('tqContent');
   if(tqView==='individual'){
-    box.innerHTML = `<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>ID/Labeler</th><th>Week</th><th>QC</th><th>Shift</th><th>Location</th><th>Source</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead>
-      <tbody>${rows.map(r=>`<tr><td>${esc(r.labelerRaw)}</td><td>${esc(weekLabel(r.week))}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.location)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${r.tasks}</td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`;
-    return;
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>ID/Labeler</th><th>Week</th><th>QC</th><th>Shift</th><th>Location</th><th>Source</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.labelerRaw)}</td><td>${esc(weekLabel(r.week))}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.location)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${r.tasks}</td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
   }
   if(tqView==='qc'){
-    const g = {};
-    rows.forEach(r=>{ const k=(r.week||'—')+'||'+(r.qtc||'—'); (g[k]=g[k]||{week:r.week, qtc:r.qtc||'—', rows:[]}).rows.push(r); });
-    const html = Object.values(g).sort((a,b)=>(String(a.week)+a.qtc).localeCompare(String(b.week)+b.qtc)).map(x=>
-      `<tr><td>${esc(weekLabel(x.week))}</td><td>${esc(x.qtc)}</td><td>${x.rows.reduce((s,r)=>s+r.tasks,0)}</td><td>${fmtPct(wavg(x.rows,'artifacts'))}</td><td>${fmtPct(wavg(x.rows,'attribute'))}</td><td>${fmtPct(wavg(x.rows,'totalAccuracy'))}</td></tr>`).join('');
-    box.innerHTML = `<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Week</th><th>QC</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${html||'<tr><td colspan="6">No data</td></tr>'}</tbody></table></div></div>`;
-    return;
+    const g={}; rows.forEach(r=>{ const k=(r.week||'—')+'||'+(r.qtc||'—'); (g[k]=g[k]||{week:r.week,qtc:r.qtc||'—',rows:[]}).rows.push(r); });
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Week</th><th>QC</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${Object.values(g).sort((a,b)=>(String(a.week)+a.qtc).localeCompare(String(b.week)+b.qtc)).map(x=>`<tr><td>${esc(weekLabel(x.week))}</td><td>${esc(x.qtc)}</td><td>${x.rows.reduce((s,r)=>s+r.tasks,0)}</td><td>${fmtPct(wavg(x.rows,'artifacts'))}</td><td>${fmtPct(wavg(x.rows,'attribute'))}</td><td>${fmtPct(wavg(x.rows,'totalAccuracy'))}</td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}</tbody></table></div></div>`; return;
   }
-  box.innerHTML = totalsHtml(rows.map(r=>({...r, shift:r.shiftN})), false);
+  box.innerHTML=totalsHtml(rows.map(r=>({...r,shift:r.shiftN})),false);
 }
 
 // ============================================================
-//  FAST SUBMITS  (فلتر تلقائي — من غير زرار Run)
+//  FAST SUBMITS — الشيفت بيتحسب بالوقت حسب الروم
 // ============================================================
-let fastRange = { from:null, to:null }, fastReq = 0;
+let fastRange={from:null,to:null}, fastReq=0, fastShift='';
 function renderFastForm(){
-  const el = document.getElementById('view-fast');
-  el.innerHTML = `
-    <div class="panel"><div class="panel-head"><h3>⚡ Fast Submits Audit</h3></div>
-    <div class="panel-body">
-      <div class="filters" id="fastPresets">
-        <button class="pill on" data-preset="24h">🕐 Last 24h</button>
-        <button class="pill" data-preset="today">📆 Today</button>
-        <button class="pill" data-preset="yesterday">📅 Yesterday</button>
-        <button class="pill" data-preset="7d">🗓️ Last 7 Days</button>
-        <button class="pill" data-preset="custom">🛠️ Custom Range</button>
-      </div>
-      <div class="filters" id="fastCustomRange" style="display:none">
-        <label>From:</label><input type="datetime-local" id="fastFrom">
-        <label>To:</label><input type="datetime-local" id="fastTo">
-      </div>
-      <div id="fastResults"></div>
-    </div></div>`;
-  function setPreset(p){
-    const now = new Date(); let from, to = now;
-    if(p==='24h') from = new Date(now.getTime()-86400000);
-    else if(p==='today'){ from = new Date(now); from.setHours(0,0,0,0); }
-    else if(p==='yesterday'){ to = new Date(now); to.setHours(0,0,0,0); from = new Date(to.getTime()-86400000); }
-    else if(p==='7d') from = new Date(now.getTime()-7*86400000);
-    fastRange = { from, to };
-  }
-  document.getElementById('fastPresets').addEventListener('click', e=>{
-    const b = e.target.closest('.pill'); if(!b) return;
-    document.querySelectorAll('#fastPresets .pill').forEach(p=>p.classList.toggle('on', p===b));
-    const preset = b.dataset.preset;
-    document.getElementById('fastCustomRange').style.display = preset==='custom' ? 'flex' : 'none';
-    if(preset !== 'custom'){ setPreset(preset); runFastAudit(); }
-  });
-  const auto = debounce(runFastAudit, 700);
-  document.getElementById('fastFrom').onchange = auto;
-  document.getElementById('fastTo').onchange = auto;
+  const el=document.getElementById('view-fast');
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>⚡ Fast Submits Audit</h3></div><div class="panel-body">
+    <div class="filters" id="fastPresets"><button class="pill on" data-preset="24h">🕐 Last 24h</button><button class="pill" data-preset="today">📆 Today</button><button class="pill" data-preset="yesterday">📅 Yesterday</button><button class="pill" data-preset="7d">🗓️ Last 7 Days</button><button class="pill" data-preset="custom">🛠️ Custom Range</button></div>
+    <div class="filters" id="fastCustomRange" style="display:none"><label>From:</label><input type="datetime-local" id="fastFrom"><label>To:</label><input type="datetime-local" id="fastTo"></div>
+    <div class="filters" id="fastShifts"><label>⏱ Shift:</label>${['','M','N','ON'].map(s=>`<button class="pill ${s===fastShift?'on':''}" data-fs="${s}">${s||'All'}</button>`).join('')}</div>
+    <div id="fastResults"></div></div></div>`;
+  const setPreset=p=>{ const now=new Date(); let from,to=now;
+    if(p==='24h') from=new Date(now-86400000);
+    else if(p==='today'){ from=new Date(now); from.setHours(0,0,0,0); }
+    else if(p==='yesterday'){ to=new Date(now); to.setHours(0,0,0,0); from=new Date(to-86400000); }
+    else if(p==='7d') from=new Date(now-7*86400000);
+    fastRange={from,to}; };
+  document.getElementById('fastPresets').addEventListener('click',e=>{ const b=e.target.closest('.pill'); if(!b) return;
+    document.querySelectorAll('#fastPresets .pill').forEach(p=>p.classList.toggle('on',p===b));
+    const p=b.dataset.preset; document.getElementById('fastCustomRange').style.display=p==='custom'?'flex':'none';
+    if(p!=='custom'){ setPreset(p); runFastAudit(); } });
+  document.getElementById('fastShifts').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; fastShift=b.dataset.fs;
+    document.querySelectorAll('#fastShifts .pill').forEach(p=>p.classList.toggle('on',p===b)); runFastAudit(); };
+  const auto=debounce(runFastAudit,700); document.getElementById('fastFrom').onchange=auto; document.getElementById('fastTo').onchange=auto;
   setPreset('24h'); runFastAudit();
 }
 function runFastAudit(){
-  let from, to;
-  const custom = document.getElementById('fastCustomRange').style.display !== 'none';
-  if(custom){
-    from = document.getElementById('fastFrom').value; to = document.getElementById('fastTo').value;
-    if(!from || !to) return;
-  } else { from = fastRange.from.toISOString(); to = fastRange.to.toISOString(); }
-  const my = ++fastReq;
-  document.getElementById('fastResults').innerHTML = '<div class="loading">⏳ Scanning (this may take a bit for large sheets)…</div>';
-  google.script.run
-    .withFailureHandler(e=>{ if(my!==fastReq) return; document.getElementById('fastResults').innerHTML = errBox(e.message, 'runFastAudit'); })
-    .withSuccessHandler(res=>{
-      if(my!==fastReq) return;
-      if(res.error){ document.getElementById('fastResults').innerHTML = errBox(res.error, 'runFastAudit'); return; }
-      renderFastResults(res);
-    }).getFastSubmitsAudit(from, to);
+  let from,to;
+  if(document.getElementById('fastCustomRange').style.display!=='none'){
+    from=new Date(document.getElementById('fastFrom').value); to=new Date(document.getElementById('fastTo').value);
+    if(isNaN(from)||isNaN(to)) return;
+  } else { from=fastRange.from; to=fastRange.to; }
+  const my=++fastReq, box=document.getElementById('fastResults'); box.innerHTML=LOADING;
+  getSheet(CFG.DB,true).then(db=>{ if(my!==fastReq) return; renderFastResults(auditFast(db,from,to)); })
+    .catch(e=>{ if(my!==fastReq) return; box.innerHTML=errBox(e.message,'runFastAudit'); });
+}
+function fmtDT(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+function auditFast(db,from,to){
+  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),unit:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),link:ci(c,['task link']),pass:ci(c,['pass'])};
+  const G={labelerLane:{},labelerLidar:{},qcLane:{},qcLidar:{}};
+  db.rows.forEach((r,i)=>{
+    if(db.orange&&db.orange[i]) return;
+    const pass=String(gc(r,I.pass)||'').toUpperCase(); if(!pass.includes('QA')&&!pass.includes('QUALITY')) return;
+    const t=parseTS(gc(r,I.ts)); if(!t||t.ms<from||t.ms>to) return;
+    const sh=shiftOf(gc(r,I.unit),t).shift; if(fastShift&&sh!==fastShift) return;
+    const lane=/LANE|2D|LINE/i.test(String(gc(r,I.mod)||''));
+    const it={ ms:t.ms, shift:sh, unit:String(gc(r,I.unit)||'').trim(), queue:String(gc(r,I.q)||'').trim()||'Default Queue', link:String(gc(r,I.link)||'').trim(), pass };
+    const add=(key,name)=>{ if(!name) return; const m=G[key]; ((m[name]=m[name]||{})[it.queue]=m[name][it.queue]||[]).push(it); };
+    add(lane?'labelerLane':'labelerLidar',String(gc(r,I.lab)||'').trim()); add(lane?'qcLane':'qcLidar',String(gc(r,I.qc)||'').trim());
+  });
+  return { labelerLane:auditGroups(G.labelerLane,10), labelerLidar:auditGroups(G.labelerLidar,10), qcLane:auditGroups(G.qcLane,5), qcLidar:auditGroups(G.qcLidar,5) };
+}
+function auditGroups(grouped,thr){
+  const out=[];
+  Object.keys(grouped).sort().forEach(name=>Object.keys(grouped[name]).forEach(queue=>{
+    const t=grouped[name][queue].slice().sort((a,b)=>a.ms-b.ms), fl=[];
+    for(let i=1;i<t.length;i++){
+      const p=t[i-1], c=t[i], diff=(c.ms-p.ms)/60000;
+      if(diff<thr){ if(!fl.length||fl[fl.length-1].link!==p.link) fl.push({...p,timeFormatted:fmtDT(p.ms),diff:'Base Task'}); fl.push({...c,timeFormatted:fmtDT(c.ms),diff:diff.toFixed(1)+' mins'}); }
+    }
+    if(fl.length) out.push({name,queueName:queue,count:fl.length,rows:fl});
+  }));
+  return out;
 }
 function renderFastResults(res){
-  const sections = [
-    ['labelerLane','👤 Labeler — Lane Line (< 10 min)'], ['labelerLidar','👤 Labeler — Lidar (< 10 min)'],
-    ['qcLane','🔖 QC — Lane Line (< 5 min)'], ['qcLidar','🔖 QC — Lidar (< 5 min)']
-  ];
-  document.getElementById('fastResults').innerHTML = sections.map(([key,title])=>{
-    const groups = res[key]||[];
-    if(groups.length===0) return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>0</span></div></div>`;
-    const body = groups.map(g=>`
-      <div style="margin-bottom:10px">
-        <div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(g.name)} — Queue: ${esc(g.queueName)} (${g.count} rows)</div>
-        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Diff</th></tr></thead>
-        <tbody>${g.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.unit)}</td><td>${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div>
-      </div>`).join('');
-    return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${groups.reduce((s,g)=>s+g.count,0)} violations</span></div><div class="panel-body">${body}</div></div>`;
+  const S=[['labelerLane','👤 Labeler — Lane Line (< 10 min)'],['labelerLidar','👤 Labeler — Lidar (< 10 min)'],['qcLane','🔖 QC — Lane Line (< 5 min)'],['qcLidar','🔖 QC — Lidar (< 5 min)']];
+  document.getElementById('fastResults').innerHTML=S.map(([k,title])=>{
+    const g=res[k]||[]; if(!g.length) return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>0</span></div></div>`;
+    const body=g.map(x=>`<div style="margin-bottom:10px"><div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(x.name)} — Queue: ${esc(x.queueName)} (${x.count} rows)</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Diff</th></tr></thead><tbody>${x.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.unit)}</td><td class="sh-${r.shift}">${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+    return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${g.reduce((s,x)=>s+x.count,0)} violations</span></div><div class="panel-body">${body}</div></div>`;
   }).join('');
 }
 
 // ============================================================
-//  TEAMS SUBMISSION  (3 شيفتات — فلتر تلقائي)
+//  TEAMS SUBMISSION
 // ============================================================
-let teamsSt = { shift:null }, teamsReq = 0;
+const SPECIAL=['QTC','SV','SL'];
+let teamsSt={shift:null}, teamsReq=0;
+function extractPc(v){ if(!v) return null; const s=String(v).trim(); for(const p of s.split('-')){ if(/^\d+$/.test(p.trim())) return p.trim(); } const m=s.match(/\b\d+\b/); return m?m[0]:null; }
+function roomKey(v){ const s=String(v||'').toLowerCase(); if(s.includes('108')) return 'room108'; if(s.includes('106')) return 'room106'; if(s.includes('102')) return 'room102'; if(s.includes('4th')||s.includes('fourth')) return 'floor4'; return ''; }
+function specialLabel(v){ const s=String(v||'').replace(/\s+/g,' ').trim().toUpperCase(); if(!s) return null; for(const t of SPECIAL){ if(new RegExp('(^|[^A-Z])'+t+'([^A-Z]|$)').test(s)) return t; } return /\d/.test(s)?null:s; }
+function categorize(mod,pass){ const m=String(mod||'').toUpperCase(), p=String(pass||'').toUpperCase(); const lane=m.includes('LANE')||m.includes('LINE'), qa=p.includes('QA')||p.includes('QQ')||p.includes('SPOT'); return lane?(qa?'qaLaneLine':'fpLaneLine'):(qa?'qaLidar':'fpLidar'); }
+const newRow=l=>({rawName:l,total:0,own:0,ext:0,extNames:{}});
 function renderTeamsForm(){
-  const el = document.getElementById('view-teams'), n = new Date();
-  const today = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
-  if(!teamsSt.shift){ const h = n.getHours(); teamsSt.shift = h<8 ? 'ON' : (h<16 ? 'M' : 'N'); }
-  el.innerHTML = `
-    <div class="panel"><div class="panel-head"><h3>📋 Teams Submission</h3></div>
-    <div class="panel-body">
-      <div class="filters"><label>Date:</label><input type="date" id="teamsDate" value="${today}">
-        <label>Shift:</label>${['ON','M','N'].map(s=>`<button class="pill ${teamsSt.shift===s?'on':''}" data-s="${s}">${s}</button>`).join('')}</div>
-      <div id="teamsResults"></div>
-    </div></div>`;
-  document.getElementById('teamsDate').onchange = runTeamsSubmission;
-  el.querySelectorAll('.pill[data-s]').forEach(b=>b.onclick=()=>{
-    teamsSt.shift = b.dataset.s;
-    el.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on', x===b));
-    runTeamsSubmission();
-  });
+  const el=document.getElementById('view-teams'), n=new Date(), today=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());
+  if(!teamsSt.shift){ const h=n.getHours(); teamsSt.shift=h<8?'ON':(h<16?'M':'N'); }
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>📋 Teams Submission</h3></div><div class="panel-body">
+    <div class="filters"><label>Date:</label><input type="date" id="teamsDate" value="${today}"><label>Shift:</label>${['ON','M','N'].map(s=>`<button class="pill ${teamsSt.shift===s?'on':''}" data-s="${s}">${s}</button>`).join('')}</div>
+    <div id="teamsResults"></div></div></div>`;
+  document.getElementById('teamsDate').onchange=runTeamsSubmission;
+  el.querySelectorAll('.pill[data-s]').forEach(b=>b.onclick=()=>{ teamsSt.shift=b.dataset.s; el.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on',x===b)); runTeamsSubmission(); });
   runTeamsSubmission();
 }
 function runTeamsSubmission(){
-  const date = document.getElementById('teamsDate').value; if(!date) return;
-  const my = ++teamsReq;
-  document.getElementById('teamsResults').innerHTML = '<div class="loading">⏳ Loading…</div>';
-  google.script.run
-    .withFailureHandler(e=>{ if(my!==teamsReq) return; document.getElementById('teamsResults').innerHTML = errBox(e.message, 'runTeamsSubmission'); })
-    .withSuccessHandler(res=>{
-      if(my!==teamsReq) return;
-      if(res.error){ document.getElementById('teamsResults').innerHTML = errBox(res.error, 'runTeamsSubmission'); return; }
-      const sum = (a,k)=>a.reduce((s,r)=>s+(Number(r[k])||0),0);
-      const T = res.teamRows, I = res.individualRows;
-      document.getElementById('teamsResults').innerHTML = `
-        <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(res.shift)} · ${esc(res.date)}</h3></div><div class="panel-body">
-        <div class="table-wrap"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
-        <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td style="white-space:normal">${esc(r.extNames)}</td></tr>`).join('') || '<tr><td colspan="5">No data</td></tr>'}
-        ${T.length?`<tr class="total"><td>TOTAL</td><td>${sum(T,'total')}</td><td>${sum(T,'own')}</td><td>${sum(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div>
-        </div></div>
-        <div class="panel"><div class="panel-head"><h3>👤 Everyone Who Reviewed</h3></div><div class="panel-body">
-        <div class="table-wrap"><table><thead><tr><th>Name</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
-        <tbody>${I.map(r=>`<tr><td>${esc(r.displayName)}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLaneLine}</td><td>${r.qaLaneLine}</td><td><b>${r.totalReviewed}</b></td></tr>`).join('') || '<tr><td colspan="6">No data</td></tr>'}
-        ${I.length?`<tr class="total"><td>TOTAL</td><td>${sum(I,'fpLidar')}</td><td>${sum(I,'qaLidar')}</td><td>${sum(I,'fpLaneLine')}</td><td>${sum(I,'qaLaneLine')}</td><td>${sum(I,'totalReviewed')}</td></tr>`:''}</tbody></table></div>
-        </div></div>`;
-    }).getTeamsSubmission(date, teamsSt.shift);
+  const date=document.getElementById('teamsDate').value; if(!date) return;
+  const my=++teamsReq, box=document.getElementById('teamsResults'); box.innerHTML=LOADING;
+  Promise.all([getSheet(CFG.TEAMS),getSheet(CFG.DB)]).then(([tm,db])=>{
+    if(my!==teamsReq) return;
+    const res=computeTeams(tm,db,date,teamsSt.shift), sum=(a,k)=>a.reduce((s,r)=>s+(Number(r[k])||0),0), T=res.teamRows, I=res.individualRows;
+    box.innerHTML=`
+      <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(res.shift)} · ${esc(res.date)}</h3></div><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
+      <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td style="white-space:normal">${esc(r.extNames)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
+      ${T.length?`<tr class="total"><td>TOTAL</td><td>${sum(T,'total')}</td><td>${sum(T,'own')}</td><td>${sum(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div></div></div>
+      <div class="panel"><div class="panel-head"><h3>👤 Everyone Who Reviewed</h3></div><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Name</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
+      <tbody>${I.map(r=>`<tr><td>${esc(r.displayName)}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLaneLine}</td><td>${r.qaLaneLine}</td><td><b>${r.totalReviewed}</b></td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}
+      ${I.length?`<tr class="total"><td>TOTAL</td><td>${sum(I,'fpLidar')}</td><td>${sum(I,'qaLidar')}</td><td>${sum(I,'fpLaneLine')}</td><td>${sum(I,'qaLaneLine')}</td><td>${sum(I,'totalReviewed')}</td></tr>`:''}</tbody></table></div></div></div>`;
+  }).catch(e=>{ if(my!==teamsReq) return; box.innerHTML=errBox(e.message,'runTeamsSubmission'); });
+}
+function computeTeams(tm,db,date,shiftCode){
+  const tc=cmap(tm.headers), iP=ci(tc,['pc no.','pc no']), iL=ci(tc,['location']), iQ=ci(tc,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(tc,['shift']);
+  const owners={}, order=[], pcs=[]; let cur=null;
+  tm.rows.forEach(r=>{
+    const raw=String(gc(r,iQ)||'').trim();
+    if(raw){ const key=normName(raw); if(key){ cur=key; if(!owners[key]){ const s=shiftFromName(raw)||normShift(gc(r,iS)); owners[key]={raw,shift:s}; order.push(key); } } }
+    const pc=extractPc(gc(r,iP)); if(pc&&cur) pcs.push({key:cur,pc,room:roomKey(gc(r,iL))});
+  });
+  let keys=order.filter(k=>owners[k].shift===shiftCode); if(!keys.length) keys=order.slice();
+  const allowed={}; keys.forEach(k=>allowed[k]=true);
+  const pcMap={}; pcs.forEach(p=>{ if(!allowed[p.key]) return; if(p.room) pcMap[p.room+'_'+p.pc]=p.key; pcMap[p.pc]=p.key; });
+  const stats={}; keys.forEach(k=>stats[k]=newRow(owners[k].raw));
+  const buffer=newRow('Buffer'), special={}, indiv={}; SPECIAL.forEach(t=>special[t]=newRow(t));
+  const d=cmap(db.headers), iTs=ci(d,['timestamp']); let iRoom=ci(d,['unit']); if(iRoom<0) iRoom=ci(d,['queue name']);
+  const iQtc=ci(d,['qtc name']), iPc=ci(d,['pc no']), iMod=ci(d,['modality']), iPass=ci(d,['pass']);
+  db.rows.forEach(row=>{
+    const t=parseTS(gc(row,iTs)); if(!t) return;
+    const rawRoom=gc(row,iRoom), cls=shiftOf(rawRoom,t);
+    if(!cls||cls.shift!==shiftCode||cls.date!==date) return;
+    const sub=String(gc(row,iQtc)||'').trim(), rawPc=gc(row,iPc), cs=cleanName(sub);
+    if(cs){ const k=normName(cs); const o=indiv[k]=indiv[k]||{displayName:cs,fpLidar:0,qaLidar:0,fpLaneLine:0,qaLaneLine:0,totalReviewed:0}; o[categorize(gc(row,iMod),gc(row,iPass))]++; o.totalReviewed++; }
+    const addExt=st=>{ st.ext++; if(cs) st.extNames[cs]=true; };
+    if(String(rawPc).toUpperCase().includes('BUFFER')||sub.toUpperCase().includes('BUFFER')){ buffer.total++; if(sub&&!sub.toUpperCase().includes('BUFFER')) addExt(buffer); return; }
+    const label=specialLabel(rawPc);
+    if(label){ const st=special[label]=special[label]||newRow(label); st.total++; if(sub) addExt(st); return; }
+    const pc=extractPc(rawPc); if(!pc) return;
+    const ok=pcMap[(roomKey(rawRoom)||'')+'_'+pc]||pcMap[pc];
+    if(ok&&stats[ok]){ const st=stats[ok]; st.total++; if(samePerson(normName(sub),ok)) st.own++; else addExt(st); }
+  });
+  const out=(r,kind)=>({qtc:r.rawName,total:r.total,own:r.own,ext:r.ext,extNames:Object.keys(r.extNames).join(', ')||'-',kind});
+  const teamRows=[]; keys.forEach(k=>{ if(stats[k].total>0) teamRows.push(out(stats[k],'qc')); });
+  if(buffer.total>0) teamRows.push(out(buffer,'special'));
+  SPECIAL.concat(Object.keys(special).filter(l=>!SPECIAL.includes(l)).sort()).forEach(l=>{ if(special[l]&&special[l].total>0) teamRows.push(out(special[l],'special')); });
+  return { teamRows, individualRows:Object.values(indiv).sort((a,b)=>b.totalReviewed-a.totalReviewed), shift:shiftCode, date };
 }
 
 // ============================================================
-//  ACCESS GATE — صندوق إيميل بسيط (من غير تحقق حقيقي من جوجل)
+//  ACCESS GATE
 // ============================================================
-function gateMsg(m){ document.getElementById('gateMsg').textContent = m; }
+function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
 function bootApp(u){
-  CURRENT_EMAIL = u.email;
-  try { localStorage.setItem('meeg_email', u.email); } catch(e){}
-  document.getElementById('userChip').textContent = '👤 ' + u.name + (u.position ? ' — ' + u.position : '');
-  document.getElementById('gate').classList.add('hide');
-  loadTab('live');
+  CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); }catch(e){}
+  document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
+  document.getElementById('gate').classList.add('hide'); loadTab('live');
 }
 function tryEmail(email){
-  gateMsg('⏳ Checking…');
-  callApi('checkemail', { email })
-    .then(u=>{ if(u && u.ok) bootApp(u); else gateMsg('🔒 ' + ((u&&u.msg)||'Access denied')); })
-    .catch(e=>gateMsg('⚠️ ' + e.message));
+  gateMsg('Checking…'); CURRENT_EMAIL=email;
+  callApi('checkemail',{email}).then(u=>{ if(u&&u.ok) bootApp(u); else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>gateMsg('⚠️ '+e.message));
 }
-function submitGateEmail(){
-  const email = document.getElementById('gateEmail').value.trim().toLowerCase();
-  if(!email){ gateMsg('⚠️ Please enter an email'); return; }
-  tryEmail(email);
-}
-document.getElementById('gateEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') submitGateEmail(); });
-
-if (API_URL.indexOf('PASTE_YOUR') === 0) {
-  gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
-} else if (CURRENT_EMAIL) {
-  document.getElementById('gateEmail').value = CURRENT_EMAIL;
-  tryEmail(CURRENT_EMAIL); // دخول تلقائي لو الإيميل محفوظ من قبل في نفس المتصفح
-} else {
-  gateMsg('');
-}
+function submitGateEmail(){ const e=document.getElementById('gateEmail').value.trim().toLowerCase(); if(!e){ gateMsg('⚠️ Please enter an email'); return; } tryEmail(e); }
+document.getElementById('gateEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') submitGateEmail(); });
+if(API_URL.indexOf('PASTE_YOUR')===0) gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
+else if(CURRENT_EMAIL){ document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
 </script>
 </body>
 </html>

@@ -237,7 +237,7 @@ function weekLabel(w){
   const d=new Date(s.substring(0,10)+'T00:00:00');
   return isNaN(d)?s:'Week of '+d.getDate()+' '+d.toLocaleString('en',{month:'short'});
 }
-function uniqVals(rows,k){ return [...new Set(rows.map(r=>r[k]).filter(Boolean))].sort(); }
+function uniqVals(rows,k){ return [...new Set(rows.map(r=>r[k]).filter(v=>v&&v!=='—'))].sort(); }
 function qfBar(id, rows, st){
   const opt=a=>a.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   return `<div class="filters" id="${id}"><label>⏱ Shift:</label>${['M','N','ON'].map(s=>`<button class="pill ${st.shift===s?'on':''}" data-s="${s}">${s}</button>`).join('')}
@@ -434,35 +434,58 @@ function renderLiveBody(){
 }
 function renderTotalSubmitView(rows,si){
   const groups=[['👤 By Labeler',si['Labeler Name']],['🔖 By QC',si['Qtc Name']],['📍 By Room',liveData.locationColIdx],['⏱ By Shift',-2],['📁 By Queue',si['Queue Name']]];
-  return groups.map(([t,idx])=>{
+  const flat = groups.map(([t,idx])=>{
     if(idx===undefined||idx===-1) return '';
     const data=idx===-2?groupCountFn(rows,r=>r.sh):groupCount(rows,idx);
     return `<div class="panel"><div class="panel-head"><h3>${t}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n])=>`<tr><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="2">No data</td></tr>'}</tbody></table></div></div>`;
   }).join('');
+
+  // 🔖 توتال كل QC مقسوم على الشيفت والروم (Cross-tab)
+  let qcCross='';
+  const iQc=si['Qtc Name'];
+  if(iQc!==undefined && liveData.locationColIdx>=0){
+    const m={};
+    rows.forEach(r=>{
+      const qc=r[iQc]||'—', room=r[liveData.locationColIdx]||'—', sh=r.sh||'—';
+      const k=qc+'||'+sh+'||'+room; m[k]=m[k]||{qc,sh,room,n:0}; m[k].n++;
+    });
+    const list=Object.values(m).sort((a,b)=> a.qc.localeCompare(b.qc) || a.sh.localeCompare(b.sh) || a.room.localeCompare(b.room));
+    qcCross = `<div class="panel"><div class="panel-head"><h3>🔖 QC Totals — by Shift &amp; Room</h3><span>${list.length} rows</span></div>
+      <div class="panel-body table-wrap"><table><thead><tr><th>QC</th><th>Shift</th><th>Room</th><th>Total Submits</th></tr></thead>
+      <tbody>${list.map(x=>`<tr><td>${esc(x.qc)}</td><td class="sh-${x.sh}">${esc(x.sh)}</td><td>${esc(x.room)}</td><td><b>${x.n}</b></td></tr>`).join('')||'<tr><td colspan="4">No data</td></tr>'}</tbody></table></div></div>`;
+  }
+  return qcCross + flat;
 }
+let topPerfMode='labeler';
 function renderTopPerformersView(rows,si){
-  const data=groupCount(rows,si['Labeler Name']).slice(0,20), med=['🥇','🥈','🥉'];
-  return `<div class="panel"><div class="panel-head"><h3>🏆 Top Performers (Labelers)</h3><span>Top ${data.length}</span></div><div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>Labeler</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n],i)=>`<tr><td><span class="rank">${med[i]||(i+1)}</span></td><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}</tbody></table></div></div>`;
+  const idx = topPerfMode==='labeler' ? si['Labeler Name'] : si['Qtc Name'];
+  const data=groupCount(rows,idx).slice(0,20), med=['🥇','🥈','🥉'];
+  const label = topPerfMode==='labeler' ? 'Labeler' : 'QC';
+  return `<div class="panel"><div class="panel-head"><h3>🏆 Top Performers (${label}s)</h3>
+    <div class="filters" style="margin:0"><button class="pill ${topPerfMode==='labeler'?'on':''}" onclick="topPerfMode='labeler';renderLiveBody()">👤 Labelers</button><button class="pill ${topPerfMode==='qc'?'on':''}" onclick="topPerfMode='qc';renderLiveBody()">🔖 QCs</button></div>
+    <span>Top ${data.length}</span></div><div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>${label}</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n],i)=>`<tr><td><span class="rank">${med[i]||(i+1)}</span></td><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}</tbody></table></div></div>`;
 }
 
 // ============================================================
 //  QC QUALITY — Quality Per Task × Data Base (Actual ID) + fallback Actual Email → Teams
 // ============================================================
 let qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='totals';
+// توحيد شكل الـ ID عشان مطابقة "1463495465" مع "1463495465.0" أو " 1463495465 " تنجح برضو
+function normId(v){ return String(v==null?'':v).trim().replace(/\.0+$/,''); }
 function buildQC(qpt, db, teams, empty){
   const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']),
         iArt=ci(q,['artifacts']), iAttr=ci(q,['attribute']), iAcc=ci(q,['total accuracy']);
   const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']);
   const byTask={};
   db.rows.forEach(r=>{
-    const id=String(gc(r,iT)||'').trim(); if(!id) return;
+    const id=normId(gc(r,iT)); if(!id) return;
     const isQA=/QA|QUALITY/i.test(String(gc(r,iP)||''));
     if(!byTask[id]||isQA) byTask[id]={ qtc:String(gc(r,iQ)||'').trim(), ts:gc(r,iTs), unit:gc(r,iU), labeler:String(gc(r,iL)||'').trim() };
   });
   const owners=loadOwners(teams,empty); let minExp='';
   const rows=[];
   qpt.rows.forEach(r=>{
-    const id=String(gc(r,iId)||'').trim(); if(!id) return;
+    const id=normId(gc(r,iId)); if(!id) return;
     const ex=String(gc(r,iExp)||'').substring(0,10); if(ex&&(!minExp||ex<minExp)) minExp=ex;
     const base={ taskId:id, tasks:1, artifacts:toNum(gc(r,iArt)), attribute:toNum(gc(r,iAttr)), totalAccuracy:toNum(gc(r,iAcc)) };
     const t=byTask[id];
@@ -554,13 +577,20 @@ function renderTeamsQContent(){
 //  FAST SUBMITS — الشيفت بيتحسب بالوقت حسب الروم
 // ============================================================
 let fastRange={from:null,to:null}, fastReq=0, fastShift='';
+let fastTypeFilter=new Set(), fastModFilter=new Set(); // فاضي = يعرض كل حاجة
 function renderFastForm(){
   const el=document.getElementById('view-fast');
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>⚡ Fast Submits Audit</h3></div><div class="panel-body">
     <div class="filters" id="fastPresets"><button class="pill on" data-preset="24h">🕐 Last 24h</button><button class="pill" data-preset="today">📆 Today</button><button class="pill" data-preset="yesterday">📅 Yesterday</button><button class="pill" data-preset="7d">🗓️ Last 7 Days</button><button class="pill" data-preset="custom">🛠️ Custom Range</button></div>
     <div class="filters" id="fastCustomRange" style="display:none"><label>From:</label><input type="datetime-local" id="fastFrom"><label>To:</label><input type="datetime-local" id="fastTo"></div>
     <div class="filters" id="fastShifts"><label>⏱ Shift:</label>${['','M','N','ON'].map(s=>`<button class="pill ${s===fastShift?'on':''}" data-fs="${s}">${s||'All'}</button>`).join('')}</div>
+    <div class="filters" id="fastType"><label>👥 Type:</label><button class="pill" data-ft="labeler">👤 Labeler</button><button class="pill" data-ft="qc">🔖 QC</button></div>
+    <div class="filters" id="fastMod"><label>🔬 Modality:</label><button class="pill" data-fm="lidar">Lidar</button><button class="pill" data-fm="lane">Lane Line</button></div>
     <div id="fastResults"></div></div></div>`;
+  document.getElementById('fastType').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; const v=b.dataset.ft;
+    fastTypeFilter.has(v)?fastTypeFilter.delete(v):fastTypeFilter.add(v); b.classList.toggle('on'); renderFastResultsFromCache(); };
+  document.getElementById('fastMod').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; const v=b.dataset.fm;
+    fastModFilter.has(v)?fastModFilter.delete(v):fastModFilter.add(v); b.classList.toggle('on'); renderFastResultsFromCache(); };
   const setPreset=p=>{ const now=new Date(); let from,to=now;
     if(p==='24h') from=new Date(now-86400000);
     else if(p==='today'){ from=new Date(now); from.setHours(0,0,0,0); }
@@ -576,6 +606,7 @@ function renderFastForm(){
   const auto=debounce(runFastAudit,700); document.getElementById('fastFrom').onchange=auto; document.getElementById('fastTo').onchange=auto;
   setPreset('24h'); runFastAudit();
 }
+let fastLastRes=null;
 function runFastAudit(){
   let from,to;
   if(document.getElementById('fastCustomRange').style.display!=='none'){
@@ -583,12 +614,13 @@ function runFastAudit(){
     if(isNaN(from)||isNaN(to)) return;
   } else { from=fastRange.from; to=fastRange.to; }
   const my=++fastReq, box=document.getElementById('fastResults'); box.innerHTML=LOADING;
-  getSheet(CFG.DB,true).then(db=>{ if(my!==fastReq) return; renderFastResults(auditFast(db,from,to)); })
+  getSheet(CFG.DB,true).then(db=>{ if(my!==fastReq) return; fastLastRes=auditFast(db,from,to); renderFastResults(fastLastRes); })
     .catch(e=>{ if(my!==fastReq) return; box.innerHTML=errBox(e.message,'runFastAudit'); });
 }
+function renderFastResultsFromCache(){ if(fastLastRes) renderFastResults(fastLastRes); }
 function fmtDT(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
 function auditFast(db,from,to){
-  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),unit:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),link:ci(c,['task link']),pass:ci(c,['pass'])};
+  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),unit:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),link:ci(c,['task link']),pass:ci(c,['pass']),pc:ci(c,['pc no']),obj:ci(c,['object count']),taskId:ci(c,['task id'])};
   const G={labelerLane:{},labelerLidar:{},qcLane:{},qcLidar:{}};
   db.rows.forEach((r,i)=>{
     if(db.orange&&db.orange[i]) return;
@@ -596,7 +628,8 @@ function auditFast(db,from,to){
     const t=parseTS(gc(r,I.ts)); if(!t||t.ms<from||t.ms>to) return;
     const sh=shiftOf(gc(r,I.unit),t).shift; if(fastShift&&sh!==fastShift) return;
     const lane=/LANE|2D|LINE/i.test(String(gc(r,I.mod)||''));
-    const it={ ms:t.ms, shift:sh, unit:String(gc(r,I.unit)||'').trim(), queue:String(gc(r,I.q)||'').trim()||'Default Queue', link:String(gc(r,I.link)||'').trim(), pass };
+    const it={ ms:t.ms, shift:sh, unit:String(gc(r,I.unit)||'').trim(), queue:String(gc(r,I.q)||'').trim()||'Default Queue', link:String(gc(r,I.link)||'').trim(), pass,
+      pc:String(gc(r,I.pc)||'').trim(), obj:gc(r,I.obj), taskId:String(gc(r,I.taskId)||'').trim() };
     const add=(key,name)=>{ if(!name) return; const m=G[key]; ((m[name]=m[name]||{})[it.queue]=m[name][it.queue]||[]).push(it); };
     add(lane?'labelerLane':'labelerLidar',String(gc(r,I.lab)||'').trim()); add(lane?'qcLane':'qcLidar',String(gc(r,I.qc)||'').trim());
   });
@@ -615,12 +648,18 @@ function auditGroups(grouped,thr){
   return out;
 }
 function renderFastResults(res){
-  const S=[['labelerLane','👤 Labeler — Lane Line (< 10 min)'],['labelerLidar','👤 Labeler — Lidar (< 10 min)'],['qcLane','🔖 QC — Lane Line (< 5 min)'],['qcLidar','🔖 QC — Lidar (< 5 min)']];
-  document.getElementById('fastResults').innerHTML=S.map(([k,title])=>{
+  const S=[
+    ['labelerLane','👤 Labeler — Lane Line (< 10 min)','labeler','lane'],
+    ['labelerLidar','👤 Labeler — Lidar (< 10 min)','labeler','lidar'],
+    ['qcLane','🔖 QC — Lane Line (< 5 min)','qc','lane'],
+    ['qcLidar','🔖 QC — Lidar (< 5 min)','qc','lidar']
+  ].filter(([,,type,mod])=> (!fastTypeFilter.size||fastTypeFilter.has(type)) && (!fastModFilter.size||fastModFilter.has(mod)) );
+  const html = S.map(([k,title])=>{
     const g=res[k]||[]; if(!g.length) return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>0</span></div></div>`;
-    const body=g.map(x=>`<div style="margin-bottom:10px"><div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(x.name)} — Queue: ${esc(x.queueName)} (${x.count} rows)</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Diff</th></tr></thead><tbody>${x.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.unit)}</td><td class="sh-${r.shift}">${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+    const body=g.map(x=>`<div style="margin-bottom:10px"><div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(x.name)} — Queue: ${esc(x.queueName)} (${x.count} rows)</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Task ID</th><th>PC</th><th>Objects</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Diff</th></tr></thead><tbody>${x.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.taskId)}</td><td>${esc(r.pc)}</td><td>${esc(r.obj)}</td><td>${esc(r.unit)}</td><td class="sh-${r.shift}">${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
     return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${g.reduce((s,x)=>s+x.count,0)} violations</span></div><div class="panel-body">${body}</div></div>`;
   }).join('');
+  document.getElementById('fastResults').innerHTML = html || '<div class="panel"><div class="panel-body" style="color:var(--ink-soft)">No sections match the selected filters.</div></div>';
 }
 
 // ============================================================
@@ -630,7 +669,14 @@ const SPECIAL=['QTC','SV','SL'];
 let teamsSt={shift:null}, teamsReq=0;
 function extractPc(v){ if(!v) return null; const s=String(v).trim(); for(const p of s.split('-')){ if(/^\d+$/.test(p.trim())) return p.trim(); } const m=s.match(/\b\d+\b/); return m?m[0]:null; }
 function roomKey(v){ const s=String(v||'').toLowerCase(); if(s.includes('108')) return 'room108'; if(s.includes('106')) return 'room106'; if(s.includes('102')) return 'room102'; if(s.includes('4th')||s.includes('fourth')) return 'floor4'; return ''; }
-function specialLabel(v){ const s=String(v||'').replace(/\s+/g,' ').trim().toUpperCase(); if(!s) return null; for(const t of SPECIAL){ if(new RegExp('(^|[^A-Z])'+t+'([^A-Z]|$)').test(s)) return t; } return /\d/.test(s)?null:s; }
+// لو القيمة فيها أي نوع خاص (QTC/SV/SL) أو مفيهاش أرقام خالص، بترجع النص زي ما هو كامل
+// (يعني "SV-QTC-SL" بتفضل صف واحد باسمها، مش بتتقسم لثلاثة)
+function specialLabel(v){
+  const s=String(v||'').replace(/\s+/g,' ').trim().toUpperCase(); if(!s) return null;
+  const hasSpecial = SPECIAL.some(t=> new RegExp('(^|[^A-Z])'+t+'([^A-Z]|$)').test(s));
+  if(hasSpecial) return s;
+  return /\d/.test(s)?null:s;
+}
 function categorize(mod,pass){ const m=String(mod||'').toUpperCase(), p=String(pass||'').toUpperCase(); const lane=m.includes('LANE')||m.includes('LINE'), qa=p.includes('QA')||p.includes('QQ')||p.includes('SPOT'); return lane?(qa?'qaLaneLine':'fpLaneLine'):(qa?'qaLidar':'fpLidar'); }
 const newRow=l=>({rawName:l,total:0,own:0,ext:0,extNames:{}});
 function renderTeamsForm(){
@@ -643,20 +689,33 @@ function renderTeamsForm(){
   el.querySelectorAll('.pill[data-s]').forEach(b=>b.onclick=()=>{ teamsSt.shift=b.dataset.s; el.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on',x===b)); runTeamsSubmission(); });
   runTeamsSubmission();
 }
+let teamsLastI=[];
 function runTeamsSubmission(){
   const date=document.getElementById('teamsDate').value; if(!date) return;
   const my=++teamsReq, box=document.getElementById('teamsResults'); box.innerHTML=LOADING;
   Promise.all([getSheet(CFG.TEAMS),getSheet(CFG.DB)]).then(([tm,db])=>{
     if(my!==teamsReq) return;
     const res=computeTeams(tm,db,date,teamsSt.shift), sum=(a,k)=>a.reduce((s,r)=>s+(Number(r[k])||0),0), T=res.teamRows, I=res.individualRows;
+    teamsLastI = I;
     box.innerHTML=`
       <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(res.shift)} · ${esc(res.date)}</h3></div><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
       <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td style="white-space:normal">${esc(r.extNames)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
       ${T.length?`<tr class="total"><td>TOTAL</td><td>${sum(T,'total')}</td><td>${sum(T,'own')}</td><td>${sum(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div></div></div>
-      <div class="panel"><div class="panel-head"><h3>👤 Everyone Who Reviewed</h3></div><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Name</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
-      <tbody>${I.map(r=>`<tr><td>${esc(r.displayName)}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLaneLine}</td><td>${r.qaLaneLine}</td><td><b>${r.totalReviewed}</b></td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}
-      ${I.length?`<tr class="total"><td>TOTAL</td><td>${sum(I,'fpLidar')}</td><td>${sum(I,'qaLidar')}</td><td>${sum(I,'fpLaneLine')}</td><td>${sum(I,'qaLaneLine')}</td><td>${sum(I,'totalReviewed')}</td></tr>`:''}</tbody></table></div></div></div>`;
+      <div class="panel"><div class="panel-head"><h3>👤 Everyone Who Reviewed</h3></div><div class="panel-body">
+      <input id="reviewSearch" placeholder="🔎 Search name…" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);margin-bottom:10px">
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
+      <tbody id="reviewBody"></tbody></table></div></div></div>`;
+    document.getElementById('reviewSearch').oninput = debounce(renderReviewBody, 150);
+    renderReviewBody();
   }).catch(e=>{ if(my!==teamsReq) return; box.innerHTML=errBox(e.message,'runTeamsSubmission'); });
+}
+function renderReviewBody(){
+  const q=(document.getElementById('reviewSearch')?.value||'').toLowerCase();
+  const I = q ? teamsLastI.filter(r=>r.displayName.toLowerCase().includes(q)) : teamsLastI;
+  const sum=(a,k)=>a.reduce((s,r)=>s+(Number(r[k])||0),0);
+  const rowsHtml = I.map(r=>`<tr><td>${esc(r.displayName)}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLaneLine}</td><td>${r.qaLaneLine}</td><td><b>${r.totalReviewed}</b></td></tr>`).join('');
+  const totalHtml = I.length ? `<tr class="total"><td>TOTAL</td><td>${sum(I,'fpLidar')}</td><td>${sum(I,'qaLidar')}</td><td>${sum(I,'fpLaneLine')}</td><td>${sum(I,'qaLaneLine')}</td><td>${sum(I,'totalReviewed')}</td></tr>` : '';
+  document.getElementById('reviewBody').innerHTML = (rowsHtml || '<tr><td colspan="6">No data</td></tr>') + totalHtml;
 }
 function computeTeams(tm,db,date,shiftCode){
   const tc=cmap(tm.headers), iP=ci(tc,['pc no.','pc no']), iL=ci(tc,['location']), iQ=ci(tc,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(tc,['shift']);

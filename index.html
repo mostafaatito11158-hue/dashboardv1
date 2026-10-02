@@ -156,11 +156,40 @@ function callApi(action, params){
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(res=>{ if(res && res.error) throw new Error(res.error); return res; });
 }
-const SHEETS = {};
-function getSheet(name, bg){
-  const k = name+(bg?'|bg':'');
-  if(SHEETS[k]) return Promise.resolve(SHEETS[k]);
-  return callApi('sheet',{ name, bg:bg?1:0 }).then(r=>SHEETS[k]=r);
+const SHEETS = {}, DB_TAIL = 0;   // DB_TAIL: 0 = كل الصفوف، أو رقم (مثلاً 15000) = آخر N صف بس لو الشيت كبير
+const ALL_NAMES = [CFG.DB,CFG.QPT,CFG.QPL,CFG.TEAMS,CFG.EMPTY].join('|');
+let BUNDLE=null, STALE=false, DATA_INIT=false;
+// تخزين محلي (IndexedDB): الفتحة التانية بتبان فوراً وبعدين بتتحدّث لوحدها
+const IDB={
+  open(){ return new Promise((res,rej)=>{ const r=indexedDB.open('meeg_cache',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  get(k){ return this.open().then(db=>new Promise(res=>{ const q=db.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); })).catch(()=>null); },
+  set(k,v){ return this.open().then(db=>new Promise(res=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>res(); })).catch(()=>{}); }
+};
+function applyBundle(r,cached){
+  Object.entries(r.sheets||{}).forEach(([n,v])=>{ if(v&&!v.error) SHEETS[n]=v; });
+  const el=document.getElementById('updTime'); if(el) el.textContent=new Date(r._ts||Date.now()).toLocaleString()+(cached?' · cached, updating…':'');
+}
+function prefetchAll(){
+  if(BUNDLE) return BUNDLE;
+  BUNDLE=callApi('bundle',{names:ALL_NAMES,tail:DB_TAIL}).then(r=>{
+    r._ts=Date.now(); applyBundle(r,false); IDB.set('bundle',r);
+    if(STALE){ STALE=false; refreshView(); }
+    return r;
+  }).catch(e=>{ BUNDLE=null; throw e; });
+  return BUNDLE;
+}
+function initData(){
+  if(DATA_INIT) return; DATA_INIT=true;
+  IDB.get('bundle').then(c=>{ if(c&&c.sheets&&!SHEETS[CFG.DB]){ applyBundle(c,true); STALE=true; } });
+  prefetchAll().catch(()=>{});
+}
+function refreshView(){
+  Object.keys(loaded).forEach(k=>loaded[k]=false);
+  if(document.getElementById('gate').classList.contains('hide')) loadTab(currentTab());
+}
+function getSheet(name){
+  if(SHEETS[name]) return Promise.resolve(SHEETS[name]);
+  return prefetchAll().then(()=>SHEETS[name]||callApi('sheet',{name,bg:name===CFG.DB?1:0,tail:name===CFG.DB?DB_TAIL:0}).then(r=>SHEETS[name]=r));
 }
 const optSheet = (n)=>getSheet(n).catch(()=>({headers:[],rows:[]}));
 
@@ -323,7 +352,7 @@ function loadTab(tab){
   if(tab==='live') loadLive(); if(tab==='qc') loadQC(); if(tab==='teamsq') loadTeamsQ();
   if(tab==='fast') renderFastForm(); if(tab==='teams') renderTeamsForm();
 }
-function refreshAll(){ Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
+function refreshAll(){ BUNDLE=null; STALE=false; Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
 function currentTab(){ return document.querySelector('#tabs .tab.active').dataset.tab; }
 
 // ============================================================
@@ -357,7 +386,7 @@ function buildLive(db){
 }
 function loadLive(){
   document.getElementById('view-live').innerHTML=LOADING;
-  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); document.getElementById('updTime').textContent=new Date().toLocaleString(); renderLiveShell(); if(liveData.slicerIndices['Qtc Name']===undefined) document.getElementById('view-live').insertAdjacentHTML('afterbegin','<div class="err" style="margin-bottom:12px">⚠️ عمود QTC Name مش موجود في Data Base. الأعمدة: '+esc(liveData.headers.join(' | '))+'</div>'); })
+  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); renderLiveShell(); if(liveData.slicerIndices['Qtc Name']===undefined) document.getElementById('view-live').insertAdjacentHTML('afterbegin','<div class="err" style="margin-bottom:12px">⚠️ عمود QTC Name مش موجود في Data Base. الأعمدة: '+esc(liveData.headers.join(' | '))+'</div>'); })
     .catch(e=>{ document.getElementById('view-live').innerHTML=errBox('Failed to load: '+e.message,'loadLive'); });
 }
 function renderLiveShell(){
@@ -836,7 +865,7 @@ function bootApp(u){
   document.getElementById('gate').classList.add('hide'); loadTab('live');
 }
 function tryEmail(email){
-  gateMsg('Checking…'); CURRENT_EMAIL=email;
+  gateMsg('Checking…'); CURRENT_EMAIL=email; initData();
   callApi('checkemail',{email}).then(u=>{ if(u&&u.ok) bootApp(u); else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>gateMsg('⚠️ '+e.message));
 }
 function submitGateEmail(){ const e=document.getElementById('gateEmail').value.trim().toLowerCase(); if(!e){ gateMsg('⚠️ Please enter an email'); return; } tryEmail(e); }

@@ -388,13 +388,13 @@ function loadOwners(teams, empty){
   const map={};
   function load(sh, ykCol, source){
     if(!sh||!sh.rows.length) return;
-    const c=cmap(sh.headers), iY=ci(c,[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']);
+    const c=cmap(sh.headers), iY=ci(c,[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']), iLn=ci(c,['labeler name','labeler','name','employee name','full name']);
     let cq='', cs='';
     sh.rows.forEach(r=>{
       const q=String(gc(r,iQ)||'').trim(); if(q){ cq=q; cs=shiftFromName(q)||normShift(gc(r,iS)); }
       const m=String(gc(r,iY)||'').trim().match(/\d{6}/);
       if(!m||map[m[0]]) return;
-      map[m[0]]={ qtc:cq, shift:cs==='—'?'':cs, pc:String(gc(r,iP)||'').trim(), location:String(gc(r,iL)||'').trim(), source };
+      map[m[0]]={ labeler:String(gc(r,iLn)||'').trim(), qtc:cq, shift:cs==='—'?'':cs, pc:String(gc(r,iP)||'').trim(), location:String(gc(r,iL)||'').trim(), source };
     });
   }
   load(teams,'labeler yubikey','Teams'); load(empty,'yubikey','Empty');
@@ -646,7 +646,7 @@ let qcStats={}, qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='tota
 // توحيد شكل الـ ID عشان مطابقة "1463495465" مع "1463495465.0" أو " 1463495465 " تنجح برضو
 function normId(v){ return String(v==null?'':v).trim().replace(/\.0+$/,''); }
 function buildQC(qpt, db, teams, empty, qpl){
-  const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']),
+  const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']), iAd=ci(q,['actual date']),
         iArt=ci(q,['artifacts']), iAttr=ci(q,['attribute']), iAcc=ci(q,['total accuracy']);
   const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']), iLk=ci(d,['task link']);
   const byTask={};
@@ -660,15 +660,15 @@ function buildQC(qpt, db, teams, empty, qpl){
   qpt.rows.forEach(r=>{
     const id=normId(gc(r,iId)); if(!id) return;
     const ex=String(gc(r,iExp)||'').substring(0,10); if(ex&&(!minExp||ex<minExp)) minExp=ex;
-    const base={ taskId:id, tasks:1, artifacts:toNum(gc(r,iArt)), attribute:toNum(gc(r,iAttr)), totalAccuracy:toNum(gc(r,iAcc)) };
+    const base={ taskId:id, actualDate:String(gc(r,iAd)||'').substring(0,16), email:String(gc(r,iEm)||''), tasks:1, artifacts:toNum(gc(r,iArt)), attribute:toNum(gc(r,iAttr)), totalAccuracy:toNum(gc(r,iAcc)) };
     const t=byTask[id];
     if(t){
       const s=shiftOf(t.unit,parseTS(t.ts));
-      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:s?s.shift:(normShift(shiftFromName(t.qtc))||'—'), labeler:t.labeler, link:t.link, source:'Data Base'});
+      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:shiftFromName(t.qtc)||(s?s.shift:'—'), labeler:t.labeler, link:t.link, source:'Data Base'});
     } else {
       const em=String(gc(r,iEm)||''), m=em.match(/\d{6}/), o=m&&owners[m[0]];
-      if(o) rows.push({...base, qtc:cleanName(o.qtc)||'—', shiftN:o.shift||'—', labeler:em, source:'Teams'});
-      else rows.push({...base, qtc:'—', shiftN:'—', labeler:em, source:'Unmatched'});
+      const fb=o&&o.shift?o.shift:(()=>{ const f=shiftOf('',parseTS(gc(r,iAd))); return f?f.shift:'—'; })();
+      const emp=o&&o.source==='Empty'; rows.push({...base, qtc:emp?'Empty':(o?(cleanName(o.qtc)||'—'):'—'), shiftN:fb, labeler:em, source:o?o.source:'Unmatched'});
     }
   });
   const wk=qplWeek(qpl)||weekKey(minExp);
@@ -676,7 +676,7 @@ function buildQC(qpt, db, teams, empty, qpl){
   const ad=ci(q,['actual date']); let dMin='',dMax=''; qpt.rows.forEach(r=>{ const x=String(gc(r,ad)||'').substring(0,10); if(!x) return; if(!dMin||x<dMin) dMin=x; if(!dMax||x>dMax) dMax=x; });
   const ids=new Set(rows.map(r=>r.taskId)).size;
   return { rows, weekTag:wk, stats:{ qplTasks, dMin, dMax, ids, qpt:qpt.rows.length, noId:qpt.rows.length-rows.length,
-    db:rows.filter(r=>r.source==='Data Base').length, teams:rows.filter(r=>r.source==='Teams').length, un:rows.filter(r=>r.source==='Unmatched').length } };
+    db:rows.filter(r=>r.source==='Data Base').length, teams:rows.filter(r=>r.source==='Teams').length, emp:rows.filter(r=>r.source==='Empty').length, un:rows.filter(r=>r.source==='Unmatched').length } };
 }
 function loadQC(){
   document.getElementById('view-qc').innerHTML=LOADING;
@@ -687,9 +687,9 @@ function loadQC(){
 function renderQC(){
   const el=document.getElementById('view-qc'); qcView='totals';
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcWeek))}</h3><span id="qcCount"></span></div><div class="panel-body">
-    <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button></div>
+    <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button><button class="pill" data-view="missing">⚠️ Not in Data Base</button></div>
     ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}
-    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}<br>🔢 IDs مختلفة: ${qcStats.ids} · تواريخ الشيت: ${esc(qcStats.dMin)} ← ${esc(qcStats.dMax)} · مجموع Tasks في Quality Per Labeler للأسبوع: ${qcStats.qplTasks}${window.DATA_CACHED?'<br>⏳ البيانات دي من الكاش ولسه بتتحدّث، استنى ثواني':''}</div></div></div><div id="qcContent"></div>`;
+    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Empty: ${qcStats.emp} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}<br>🔢 IDs مختلفة: ${qcStats.ids} · تواريخ الشيت: ${esc(qcStats.dMin)} ← ${esc(qcStats.dMax)} · مجموع Tasks في Quality Per Labeler للأسبوع: ${qcStats.qplTasks}${window.DATA_CACHED?'<br>⏳ البيانات دي من الكاش ولسه بتتحدّث، استنى ثواني':''}</div></div></div><div id="qcContent"></div>`;
   document.getElementById('qcViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; qcView=b.dataset.view;
     el.querySelectorAll('#qcViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderQCContent(); };
   wireQf('qcBar',qcSt,renderQCContent,renderQC); renderQCContent();
@@ -698,6 +698,10 @@ function renderQCContent(){
   const rows=qcRowsData.filter(r=>(!qcSt.shift||r.shiftN===qcSt.shift)&&(!qcSt.qtc||r.qtc===qcSt.qtc)).map(r=>({...r,week:qcWeek}));
   document.getElementById('qcCount').textContent=rows.length+' tasks';
   const box=document.getElementById('qcContent');
+  if(qcView==='missing'){
+    const M=rows.filter(r=>r.source!=='Data Base');
+    box.innerHTML=`<div class="panel"><div class="panel-head"><h3>⚠️ Tasks in Quality Per Task but not in Data Base</h3><span>${M.length} of ${rows.length} tasks · Teams: ${M.filter(r=>r.source==='Teams').length} · Empty: ${M.filter(r=>r.source==='Empty').length} · Unmatched: ${M.filter(r=>r.source==='Unmatched').length}</span></div><div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>Task ID</th><th>Actual date</th><th>Actual email</th><th>QC (flash)</th><th>Shift</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${M.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.taskId)}</td><td>${esc(r.actualDate)}</td><td>${esc(r.email)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')||'<tr><td colspan="10">كل التاسكات موجودة في Data Base ✓</td></tr>'}</tbody></table></div></div>`; return;
+  }
   if(qcView==='individual'){
     box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>QC</th><th>Shift</th><th>Labeler</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${linkTask(r)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.labeler)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
   }

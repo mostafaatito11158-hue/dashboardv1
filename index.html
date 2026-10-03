@@ -963,13 +963,15 @@ function anBuild(db){
     const id=normId(gc(r,I.id)); if(!id) return;
     const t=parseTS(gc(r,I.ts)), qa=isQAPass(gc(r,I.p)), x=m[id]=m[id]||{id,passes:{},ms:0,ts:'',date:''};
     x.passes[qa?'QA':'FP']=1;
-    const lab=String(gc(r,I.lab)||'').trim(), qc=cleanName(gc(r,I.qc));
-    if(!qa||!x.lab) x.lab=lab||x.lab||''; if(qa||!x.qc) x.qc=qc||x.qc||'';
+    const lab=String(gc(r,I.lab)||'').trim(), qc=cleanName(gc(r,I.qc)), qraw=String(gc(r,I.qc)||'').trim();
+    if(qa||!x.qcRaw) x.qcRaw=qraw||x.qcRaw||'';
+    if(!qa||!x.lab) x.lab=lab||x.lab||''; if(qa||!x.qc){ x.qc=qc||x.qc||''; x.qcRaw=String(gc(r,I.qc)||'').trim()||x.qcRaw||''; }
     x.link=String(gc(r,I.lk)||'').trim()||x.link||''; x.queue=String(gc(r,I.q)||'').trim()||x.queue||'';
     x.mod=/LANE|LINE/i.test(String(gc(r,I.mod)||''))?'Lane Line':'Lidar';
-    if(t&&t.ms>=x.ms){ x.ms=+t.ms; x.ts=t.str; x.date=t.date; const sh=shiftOf(gc(r,I.u),t); x.sh=sh?sh.shift:''; }
+    if(t&&t.ms>=x.ms){ x.ms=+t.ms; x.ts=t.str; x.date=t.date; const sh=shiftOf(gc(r,I.u),t); x.tsh=sh?sh.shift:''; }
   });
-  return Object.values(m).sort((a,b)=>b.ms-a.ms);
+  const out=Object.values(m); out.forEach(x=>{ x.sh=shiftFromName(x.qcRaw)||x.tsh||''; });
+  return out.sort((a,b)=>b.ms-a.ms);
 }
 function loadAnalysis(){
   const el=document.getElementById('view-analysis'); el.innerHTML=LOADING;

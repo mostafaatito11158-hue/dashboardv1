@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MEEG Productivity</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 8L16 36h13l-4 20 23-30H34z' fill='white'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 8L16 36h13l-4 20 23-30H34z' fill='white'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#1b1147">
+<style>
+:root{
+  --bg:#e9efff; --panel:rgba(255,255,255,.62); --line:rgba(15,23,42,.12); --ink:#0f172a; --ink-soft:#475569;
+  --chip:rgba(255,255,255,.6); --chip-line:rgba(15,23,42,.14); --acc:#6366f1; --on-acc:#fff; --pop:#fff; --hi:rgba(255,255,255,.9);
+  --good:#047857; --bad:#be123c; --m:#b45309; --n:#1d4ed8; --on:#6d28d9;
+  --back:radial-gradient(circle at 10% 15%,rgba(99,102,241,.28),transparent 42%),radial-gradient(circle at 90% 80%,rgba(244,114,182,.3),transparent 46%),linear-gradient(135deg,#dbeafe,#e0f2fe);
+}
+[data-theme="dark"]{
+  --bg:#1b1147; --panel:rgba(255,255,255,.12); --line:rgba(255,255,255,.25); --ink:#fff; --ink-soft:rgba(255,255,255,.75);
+  --chip:rgba(255,255,255,.08); --chip-line:rgba(255,255,255,.22); --acc:#67e8f9; --on-acc:#06222b; --pop:#26305a; --hi:rgba(255,255,255,.25);
+  --good:#6ee7b7; --bad:#fda4af; --m:#fde047; --n:#67e8f9; --on:#f9a8d4;
+  --back:radial-gradient(circle at 12% 18%,rgba(255,64,200,.38),transparent 42%),radial-gradient(circle at 88% 72%,rgba(0,200,255,.38),transparent 46%),linear-gradient(135deg,#1b1147,#0b3b5c);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--back);background-attachment:fixed;background-color:var(--bg);color:var(--ink);font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px;min-height:100vh}
+.header,.tabs,.panel,.stat{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.header{background:var(--panel);border-bottom:1px solid var(--line);box-shadow:inset 0 1px 0 var(--hi);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header h1{margin:0;font-size:18px}.header .meta{font-size:11px;color:var(--ink-soft)}
+.btn{border:1px solid var(--chip-line);border-radius:16px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;background:var(--chip);color:var(--ink);display:inline-flex;align-items:center;gap:5px}
+.btn.dark{background:var(--acc);color:var(--on-acc);border-color:transparent}
+.btn:active{transform:scale(.96)}
+.chip-user{font-size:11px;padding:6px 12px;border-radius:14px;border:1px solid var(--chip-line);background:var(--chip)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.tab{border:1px solid var(--chip-line);background:var(--chip);border-radius:12px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;color:var(--ink-soft)}
+.tab.active,.pill.on{background:var(--acc);color:var(--on-acc);border-color:transparent}
+.wrap{max-width:1600px;margin:0 auto;padding:14px 16px 40px}
+.panel{background:var(--panel);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--hi);border-radius:12px;margin-bottom:14px;position:relative}
+.panel.ss-open{z-index:50}
+.panel-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.panel-head h3{margin:0;font-size:14px}.panel-body{padding:14px 16px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filters select,.filters input{padding:6px 10px;border-radius:8px;border:1px solid var(--chip-line);font-size:12px;background:var(--chip);color:var(--ink)}
+select option{background:var(--pop);color:var(--ink)}
+.filters label{font-size:11px;font-weight:700;color:var(--ink-soft)}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{position:sticky;top:0;background:var(--pop);text-align:left;padding:7px 8px;color:var(--ink-soft);font-size:10px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:hover td{background:var(--chip)}
+tr.special td{font-style:italic;background:rgba(251,191,36,.14)}
+tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--line)}
+.table-wrap{overflow:auto;max-height:520px}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 16px;text-align:center;min-width:80px}
+.stat b{display:block;font-size:18px;color:var(--acc)}.stat span{font-size:9.5px;color:var(--ink-soft);font-weight:700}
+.pill{background:var(--chip);border:1px solid var(--chip-line);border-radius:14px;padding:5px 12px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--ink-soft)}
+.badge{background:var(--chip);border:1px solid var(--chip-line);border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700}
+.pass{color:var(--good);font-weight:700}.diffbad{color:var(--bad);font-weight:700}
+.err{padding:14px;background:rgba(244,63,94,.16);color:var(--bad);border-radius:8px;font-weight:600;white-space:pre-wrap;word-break:break-word}
+.err button{margin-top:8px;border:none;background:var(--bad);color:#000;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700}
+.tagbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tag{background:var(--chip);border:1px solid var(--chip-line);border-radius:12px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
+.tag button{border:none;background:none;cursor:pointer;color:var(--bad);font-weight:800}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.card{border:1px solid var(--chip-line);border-radius:10px;padding:10px 12px;background:var(--chip)}
+.card b{font-family:monospace}
+.rank{font-weight:800;width:22px;display:inline-block}
+.totals{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:900px){.totals{grid-template-columns:1fr}}
+.tt th,.tt td{text-align:center}
+.sh-M{color:var(--m);font-weight:800}.sh-N{color:var(--n);font-weight:800}.sh-ON{color:var(--on);font-weight:800}
+.acc-v{color:var(--acc);font-weight:800}
+.ss{position:relative;display:inline-block}
+.ss-btn{padding:6px 10px;border-radius:8px;border:1px solid var(--chip-line);font-size:12px;background:var(--chip);color:var(--ink);cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-pop{display:none;position:absolute;top:34px;left:0;z-index:1000;width:240px;background:var(--pop);border:1px solid var(--acc);border-radius:10px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+.ss-pop input{width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);margin-bottom:4px;font-size:12px}
+.ss-list{max-height:240px;overflow:auto}
+.ss-list div{padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--ink)}
+.ss-list div:hover,.ss-list div.on{background:var(--chip-line)}
+.ss-list .none{color:var(--ink-soft);cursor:default}
+.loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px;color:var(--ink-soft)}
+@keyframes zap{0%,100%{transform:scale(.85) rotate(-10deg);opacity:.55}50%{transform:scale(1.18) rotate(10deg);opacity:1}}
+.loading{gap:16px}
+.ld{position:relative;width:76px;height:76px;display:grid;place-items:center}
+.ld i{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--acc);border-left-color:rgba(103,232,249,.25);animation:spin 1.1s linear infinite}
+.ld i+i{inset:10px;border-top-color:#f472b6;border-left-color:rgba(244,114,182,.25);animation-duration:1.7s;animation-direction:reverse}
+.ld b{font-size:26px;line-height:1;filter:drop-shadow(0 0 10px var(--acc));animation:zap 1s ease-in-out infinite}
+.ldt{font-weight:700;letter-spacing:.6px;color:var(--ink-soft)}
+.ldt::after{content:'';animation:dots 1.2s steps(1,end) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gate-ld{display:none;width:44px;height:44px;margin:14px auto 0}.gate-ld b{font-size:16px}
+#gate.busy .gate-ld{display:grid}
+.logo{display:inline-block;width:26px;height:26px;vertical-align:-6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 8L16 36h13l-4 20 23-30H34z' fill='white'/%3E%3C/svg%3E") center/contain no-repeat}
+.logo.big{width:34px;height:34px;vertical-align:-9px}
+#gateWho{min-height:0}
+.who{margin:2px 0 10px;padding:8px 12px;border-radius:12px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:12.5px;font-weight:700}
+.who span{color:var(--acc)}
+.lnk{color:var(--acc);font-weight:700;text-decoration:none}.lnk:hover{text-decoration:underline}
+.dp{position:relative;display:inline-block}.dp-pop{width:262px;padding:10px;top:36px}
+.dp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--ink)}
+.dp-h button,.dp-f button{border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);border-radius:8px;padding:3px 10px;cursor:pointer;font-weight:700}
+.dp-w,.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.dp-w i{font-style:normal;font-size:10px;color:var(--ink-soft)}
+.dp-d{border:none;background:none;color:var(--ink);padding:6px 0;border-radius:8px;cursor:pointer;font-size:12px}
+.dp-d:hover{background:var(--chip-line)}.dp-d.on{background:var(--acc);color:var(--on-acc);font-weight:800}
+.dp-t{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:8px;color:var(--ink)}
+.dp-t select{padding:4px 6px;border-radius:8px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink)}
+.dp-f{margin-top:8px;text-align:center}
+#gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:var(--back);background-color:var(--bg);padding:20px;text-align:center}
+#gate.hide{display:none}
+.gate-input{width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:14px;margin-bottom:12px;outline:none;transition:.2s}
+.gate-input::placeholder{color:var(--ink-soft)}
+.gate-input:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(103,232,249,.22)}
+.gate-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px #26305a inset}
+.welcome{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:3000;padding:12px 22px;border-radius:16px;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:wel 4.5s ease forwards;pointer-events:none}
+@keyframes wel{0%{opacity:0;transform:translate(-50%,-14px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-14px)}}
+.shot{max-height:none!important;overflow:visible}
+.shot td.wrap{white-space:normal;max-width:380px}
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="panel" style="padding:28px 32px;max-width:420px;width:100%">
+    <h2 style="margin:0 0 4px"><span class="logo big"></span> MEEG Productivity</h2>
+    <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px">Enter your email to open the dashboard.</p>
+    <input id="gateEmail" class="gate-input" type="email" placeholder="you@company.com" autocomplete="off">
+    <button class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
+    <div id="gateWho"></div>
+    <div class="ld gate-ld"><i></i><i></i><b>⚡</b></div>
+    <div id="gateMsg" style="white-space:pre-wrap;margin-top:10px;color:var(--ink-soft);font-size:12.5px"></div>
+  </div>
+</div>
+
+<div class="header">
+  <div><h1><span class="logo"></span> MEEG Productivity</h1><div class="meta">Unified Dashboard — <span id="updTime">—</span></div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="userChip" class="chip-user"></span>
+    <button class="btn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <button class="btn dark" onclick="refreshAll()">🔄 Refresh</button>
+  </div>
+</div>
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="live">📊 Live</button>
+  <button class="tab" data-tab="qc">🎯 QC Quality</button>
+  <button class="tab" data-tab="teamsq">👥 Teams Quality</button>
+  <button class="tab" data-tab="fast">⚡ Fast Submits</button>
+  <button class="tab" data-tab="teams">📋 Teams Submission</button>
+</div>
+<div class="wrap">
+  <div id="view-live" class="view"></div>
+  <div id="view-qc" class="view" style="display:none"></div>
+  <div id="view-teamsq" class="view" style="display:none"></div>
+  <div id="view-fast" class="view" style="display:none"></div>
+  <div id="view-teams" class="view" style="display:none"></div>
+</div>
+
+<script>
+// ---------- theme ----------
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️ Light' : '🌙 Dark';
+  try{ localStorage.setItem('meeg_theme', t); }catch(e){}
+}
+function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark'); }
+(function(){ let s='dark'; try{ s=localStorage.getItem('meeg_theme')||'dark'; }catch(e){} applyTheme(s); })();
+
+// ============================================================
+//  API  (⚠️ حط لينك الـ /exec بتاعك هنا)
+// ============================================================
+const API_URL = "https://script.google.com/macros/s/AKfycbxYSQUkGL9plyb3QS0o65goVp6wDG9UVNTIzeEPkrVZjlVUbtLTm0s2KIANqQb8GBjwJQ/exec";
+const CFG = { DB:'Data Base', QPT:'Quality Per Task', QPL:'Quality Per Labeler', TEAMS:'Teams', EMPTY:'Empty' };
+let CURRENT_EMAIL=''; try{ CURRENT_EMAIL=localStorage.getItem('meeg_email')||''; }catch(e){}
+
+function callApi(action, params){
+  const p = new URLSearchParams({ action, email:CURRENT_EMAIL, ...(params||{}) });
+  return fetch(API_URL+'?'+p.toString())
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(res=>{ if(res && res.error) throw new Error(res.error); return res; });
+}
+const SHEETS = {}, DB_TAIL = 0;   // DB_TAIL: 0 = كل الصفوف، أو رقم (مثلاً 15000) = آخر N صف بس لو الشيت كبير
+const ALL_NAMES = [CFG.DB,CFG.QPT,CFG.QPL,CFG.TEAMS,CFG.EMPTY].join('|');
+let BUNDLE=null, STALE=false, DATA_INIT=false;
+// تخزين محلي (IndexedDB): الفتحة التانية بتبان فوراً وبعدين بتتحدّث لوحدها
+const IDB={
+  open(){ return new Promise((res,rej)=>{ const r=indexedDB.open('meeg_cache',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  get(k){ return this.open().then(db=>new Promise(res=>{ const q=db.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); })).catch(()=>null); },
+  set(k,v){ return this.open().then(db=>new Promise(res=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>res(); })).catch(()=>{}); }
+};
+function applyBundle(r,cached){
+  Object.entries(r.sheets||{}).forEach(([n,v])=>{ if(v&&!v.error) SHEETS[n]=v; });
+  const el=document.getElementById('updTime'); if(el) el.textContent=new Date(r._ts||Date.now()).toLocaleString()+(cached?' · cached, updating…':'');
+}
+function prefetchAll(){
+  if(BUNDLE) return BUNDLE;
+  BUNDLE=callApi('bundle',{names:ALL_NAMES,tail:DB_TAIL}).then(r=>{
+    r._ts=Date.now(); applyBundle(r,false); IDB.set('bundle',r);
+    if(STALE){ STALE=false; refreshView(); }
+    prewarm();
+    return r;
+  }).catch(e=>{ BUNDLE=null; throw e; });
+  return BUNDLE;
+}
+let CACHE_P=null;
+function initData(){
+  if(DATA_INIT) return; DATA_INIT=true;
+  CACHE_P=IDB.get('bundle').then(c=>{ if(c&&c.sheets&&!SHEETS[CFG.DB]){ applyBundle(c,true); STALE=true; } });
+  prefetchAll().catch(()=>{});
+}
+// تجهيز باقي التابات في الخلفية عشان التنقل يبقى لحظي
+function prewarm(){ ['qc','teamsq','teams','fast'].forEach((t,i)=>setTimeout(()=>{ try{ loadTab(t); }catch(e){} },600+i*700)); }
+function refreshView(){
+  Object.keys(loaded).forEach(k=>loaded[k]=false);
+  if(document.getElementById('gate').classList.contains('hide')) loadTab(currentTab());
+}
+function getSheet(name){
+  return (CACHE_P||Promise.resolve()).then(()=>{
+    if(SHEETS[name]) return SHEETS[name];
+    return prefetchAll().then(()=>SHEETS[name]||callApi('sheet',{name,bg:name===CFG.DB?1:0,tail:name===CFG.DB?DB_TAIL:0}).then(r=>SHEETS[name]=r));
+  });
+}
+const optSheet = (n)=>getSheet(n).catch(()=>({headers:[],rows:[]}));
+
+// ---------- helpers ----------
+function esc(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtPct(v){ return (v===''||v===null||v===undefined||isNaN(v)) ? '-' : (Number(v)<=1 ? (Number(v)*100).toFixed(1)+'%' : Number(v).toFixed(1)); }
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+function errBox(msg, retryFn){ return `<div class="err">⚠️ ${esc(msg)}<br><button onclick="(${retryFn})()">🔁 Retry</button></div>`; }
+const LOADING = '<div class="loading"><div class="ld"><i></i><i></i><b>⚡</b></div><div class="ldt">Loading data</div></div>';
+function cmap(h){ const m={}; h.forEach((x,i)=>{ const k=String(x||'').replace(/\s+/g,' ').trim().toLowerCase(); if(k&&m[k]===undefined) m[k]=i; }); return m; }
+function ci(m, names){ for(const n of names){ const k=n.toLowerCase(); if(m[k]!==undefined) return m[k]; } return -1; }
+function gc(r,i){ return i>=0 ? r[i] : ''; }
+function toNum(v){ if(v===''||v==null) return ''; const n=Number(v); return isNaN(n)?'':n; }
+const pad=n=>String(n).padStart(2,'0');
+
+// ---------- الوقت والشيفتات (المصدر الوحيد لقواعد الشيفت) ----------
+// Room 108/106/4th: ON 00:00-07:55 | M 08:00-15:55 | N 16:00-23:55
+// Room 102:         ON 00:30-08:25 | M 08:30-16:25 | N 16:30-00:25 (اليوم التالي بيتحسب N لليوم السابق)
+const _tsC=new Map();
+function parseTS(v){
+  if(v===''||v==null) return null;
+  const k=String(v); let r=_tsC.get(k);
+  if(r===undefined){ r=parseTS_raw(k); _tsC.set(k,r); }
+  return r;
+}
+function parseTS_raw(v){
+  if(v===''||v==null) return null;
+  const s=String(v).trim(); let y,mo,d,h=0,mi=0,se=0,ap='',m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){
+    y=+m[1]; mo=+m[2]; d=+m[3]; h=+(m[4]||0); mi=+(m[5]||0); se=+(m[6]||0); ap=(m[7]||'').toLowerCase();
+  } else if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(?:(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){
+    y=+m[3]; if(+m[1]>12){ d=+m[1]; mo=+m[2]; } else { mo=+m[1]; d=+m[2]; }
+    h=+(m[4]||0); mi=+(m[5]||0); se=+(m[6]||0); ap=(m[7]||'').toLowerCase();
+  } else return null;
+  if(ap==='pm'&&h<12) h+=12; if(ap==='am'&&h===12) h=0;
+  return { date:y+'-'+pad(mo)+'-'+pad(d), mins:h*60+mi, str:y+'-'+pad(mo)+'-'+pad(d)+' '+pad(h)+':'+pad(mi)+':'+pad(se), ms:new Date(y,mo-1,d,h,mi,se) };
+}
+function prevDate(ds){ const p=ds.split('-').map(Number), d=new Date(Date.UTC(p[0],p[1]-1,p[2]-1)); return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate()); }
+function shiftOf(room, t){
+  if(!t) return null;
+  let a=t.mins, date=t.date;
+  if(/102/.test(String(room||''))){ a-=30; if(a<0){ a+=1440; date=prevDate(date); } }
+  return { shift:a<480?'ON':a<960?'M':'N', date };
+}
+function normShift(s){
+  const v=String(s||'').trim().toLowerCase(); if(!v) return '—';
+  if(/over\s*night|\(on\)|^on$/.test(v)) return 'ON';
+  if(/morning|\(m\)|^m$/.test(v)) return 'M';
+  if(/night|\(n\)|^n$/.test(v)) return 'N';
+  return String(s).trim();
+}
+function shiftFromName(name){ const m=String(name||'').match(/(?:^|[^A-Za-z])(ON|M|N)(?:[^A-Za-z]|$)/i); return m?m[1].toUpperCase():''; }
+function cleanName(n){ return n ? String(n).replace(/\s*\([^)]*\)/g,'').replace(/\b(qtc|tl|on|m|n)\b/gi,'').replace(/[-_/\\]/g,' ').replace(/\s+/g,' ').trim() : ''; }
+function normName(n){ return cleanName(n).toLowerCase(); }
+function samePerson(a,b){
+  if(!a||!b) return false; if(a===b) return true;
+  const w1=a.split(' '), w2=b.split(' ');
+  if(w1.length>=2&&w2.length>=2&&w1[0]===w2[0]&&w1[1]===w2[1]) return true;
+  return a.indexOf(b)!==-1||b.indexOf(a)!==-1;
+}
+
+// ---------- shared UI helpers ----------
+function groupCountFn(rows, fn){ const m={}; rows.forEach(r=>{ const k=fn(r)||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
+function closeSS(){ document.querySelectorAll('.ss-pop').forEach(p=>p.style.display='none'); document.querySelectorAll('.ss-open').forEach(x=>x.classList.remove('ss-open')); }
+document.addEventListener('click', closeSS);
+function makeSearchable(sel){
+  if(!sel||sel.dataset.ss) return; sel.dataset.ss='1'; sel.style.display='none';
+  const wrap=document.createElement('span'); wrap.className='ss';
+  const btn=document.createElement('button'); btn.type='button'; btn.className='ss-btn';
+  const pop=document.createElement('div'); pop.className='ss-pop';
+  const inp=document.createElement('input'); inp.placeholder='🔎 Search…';
+  const list=document.createElement('div'); list.className='ss-list';
+  pop.append(inp,list); wrap.append(btn,pop); sel.after(wrap);
+  const label=()=>{ const o=sel.options[sel.selectedIndex]; btn.textContent=(o?o.text:'')+' ▾'; };
+  const pick=o=>{ sel.value=o.value; label(); closeSS(); if(sel.onchange) sel.onchange(); };
+  const draw=()=>{
+    const q=inp.value.trim().toLowerCase(); list.innerHTML='';
+    const m=[...sel.options].filter(o=>o.text.toLowerCase().includes(q)).slice(0,300);
+    m.forEach(o=>{ const d=document.createElement('div'); d.textContent=o.text; if(o.value===sel.value) d.className='on'; d.onclick=e=>{ e.stopPropagation(); pick(o); }; list.appendChild(d); });
+    if(!m.length){ const d=document.createElement('div'); d.className='none'; d.textContent='No match'; list.appendChild(d); }
+    list._first=m[0];
+  };
+  btn.onclick=e=>{ e.stopPropagation(); const open=pop.style.display==='block'; closeSS(); if(!open){ pop.style.display='block'; const pn=wrap.closest('.panel'); if(pn) pn.classList.add('ss-open'); inp.value=''; draw(); inp.focus(); } };
+  inp.oninput=draw; inp.onclick=e=>e.stopPropagation();
+  inp.onkeydown=e=>{ if(e.key==='Enter'&&list._first) pick(list._first); if(e.key==='Escape') closeSS(); };
+  label();
+}
+function wavg(rows,key){
+  let s=0,w=0;
+  rows.forEach(r=>{ const v=r[key]; if(v!==''&&v!==null&&v!==undefined&&!isNaN(v)){ const t=r.tasks||1; s+=Number(v)*t; w+=t; } });
+  return w?s/w:'';
+}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function weekParts(w){
+  if(w===''||w==null) return null; const s=String(w).trim(); let m,y,mo,d;
+  if((m=s.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})/))){ y=+m[1]; mo=+m[2]; d=+m[3]; if(mo>12){ const t=mo; mo=d; d=t; } }
+  else { const t=parseTS(s); if(!t) return null; [y,mo,d]=t.date.split('-').map(Number); }
+  return (mo>=1&&mo<=12&&d>=1&&d<=31)?[y,mo,d]:null;
+}
+function weekKey(w){ const p=weekParts(w); return p?p[0]+'-'+pad(p[1])+'-'+pad(p[2]):String(w==null?'':w).trim(); }
+function weekLabel(w){ if(!w) return '—'; const p=weekParts(w); return p?'WEEK '+p[2]+' '+MON[p[1]-1]:String(w); }
+function qplWeek(qpl){
+  if(!qpl||!qpl.rows||!qpl.rows.length) return '';
+  const c=cmap(qpl.headers); let i=ci(c,['week']); if(i<0) i=1;
+  let best=''; qpl.rows.forEach(r=>{ const k=weekKey(gc(r,i)); if(k&&k>best) best=k; }); return best;
+}
+function uniqVals(rows,k){ return [...new Set(rows.map(r=>r[k]).filter(v=>v&&v!=='—'))].sort(); }
+function qfBar(id, rows, st){
+  const opt=a=>a.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  return `<div class="filters" id="${id}"><label>⏱ Shift:</label>${['M','N','ON'].map(s=>`<button class="pill ${st.shift===s?'on':''}" data-s="${s}">${s}</button>`).join('')}
+    <select data-k="qtc"><option value="">🔖 All QC</option>${opt(uniqVals(rows,'qtc'))}</select>
+    <button class="pill" data-clear="1">✕ Clear</button></div>`;
+}
+function wireQf(id, st, apply, rerender){
+  const bar=document.getElementById(id);
+  bar.querySelectorAll('select').forEach(s=>{ s.value=st[s.dataset.k]||''; s.onchange=()=>{ st[s.dataset.k]=s.value; apply(); }; makeSearchable(s); });
+  bar.querySelectorAll('.pill[data-s]').forEach(p=>p.onclick=()=>{ st.shift=st.shift===p.dataset.s?'':p.dataset.s; bar.querySelectorAll('.pill[data-s]').forEach(x=>x.classList.toggle('on',x.dataset.s===st.shift)); apply(); });
+  bar.querySelector('[data-clear]').onclick=()=>{ st.shift=''; st.qtc=''; rerender(); };
+}
+function totalsHtml(rows, tva){
+  const mets=tva?[['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['tva','TVA F1'],['totalAccuracy','TOTAL ACCURACY']]
+                :[['artifacts','ARTIFACTS'],['attribute','ATTRIBUTE'],['totalAccuracy','TOTAL ACCURACY']];
+  const order={M:1,N:2,ON:3}, by={}, wk={};
+  rows.forEach(r=>{ const w=r.week||'—', s=normShift(r.shift);
+    (by[w+'||'+s]=by[w+'||'+s]||{w,s,rows:[]}).rows.push(r); (wk[w]=wk[w]||{w,rows:[]}).rows.push(r); });
+  const tasks=a=>a.reduce((s,r)=>s+(r.tasks||0),0);
+  const cell=(a,k,cls)=>`<td class="${cls||''}">${fmtPct(wavg(a,k))}</td>`;
+  const shiftRows=Object.values(by).sort((a,b)=>String(a.w).localeCompare(String(b.w))||((order[a.s]||9)-(order[b.s]||9))).map(g=>
+    `<tr><td>${esc(weekLabel(g.w))}</td><td class="sh-${g.s}">${esc(g.s)}</td><td><b>${tasks(g.rows)}</b></td>${mets.map(([k])=>cell(g.rows,k,k==='totalAccuracy'?'sh-'+g.s:'')).join('')}</tr>`).join('');
+  const wfRows=Object.values(wk).sort((a,b)=>String(a.w).localeCompare(String(b.w))).map(g=>
+    `<tr><td>${esc(weekLabel(g.w))}</td><td><b>${tasks(g.rows)}</b></td>${mets.map(([k])=>cell(g.rows,k,k==='totalAccuracy'?'acc-v':'')).join('')}</tr>`).join('');
+  const head=mets.map(([,l])=>`<th>${l}</th>`).join('');
+  return `<div class="totals">
+    <div class="panel"><div class="panel-head"><h3>📊 Shift</h3></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>WEEK</th><th>SHIFT</th><th>NO. TASKS</th>${head}</tr></thead><tbody>${shiftRows||'<tr><td colspan="9">No data</td></tr>'}</tbody></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>👥 Workforce</h3></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>WEEK</th><th>TOTAL NO. TASKS</th>${head}</tr></thead><tbody>${wfRows||'<tr><td colspan="8">No data</td></tr>'}</tbody></table></div></div></div>`;
+}
+
+// أصحاب الأجهزة/الفلاشات من شيتات Teams و Empty (fill-down لـ TL/QTC و Shift)
+function loadOwners(teams, empty){
+  const map={};
+  function load(sh, ykCol, source){
+    if(!sh||!sh.rows.length) return;
+    const c=cmap(sh.headers), iY=ci(c,[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']);
+    let cq='', cs='';
+    sh.rows.forEach(r=>{
+      const q=String(gc(r,iQ)||'').trim(); if(q){ cq=q; cs=shiftFromName(q)||normShift(gc(r,iS)); }
+      const m=String(gc(r,iY)||'').trim().match(/\d{6}/);
+      if(!m||map[m[0]]) return;
+      map[m[0]]={ qtc:cq, shift:cs==='—'?'':cs, pc:String(gc(r,iP)||'').trim(), location:String(gc(r,iL)||'').trim(), source };
+    });
+  }
+  load(teams,'labeler yubikey','Teams'); load(empty,'yubikey','Empty');
+  return map;
+}
+
+// ---------- tabs ----------
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn=e.target.closest('.tab'); if(!btn) return;
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('active',t===btn));
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.getElementById('view-'+btn.dataset.tab).style.display='block';
+  loadTab(btn.dataset.tab);
+});
+const loaded={};
+function loadTab(tab){
+  if(loaded[tab]) return; loaded[tab]=true;
+  if(tab==='live') loadLive(); if(tab==='qc') loadQC(); if(tab==='teamsq') loadTeamsQ();
+  if(tab==='fast') renderFastForm(); if(tab==='teams') renderTeamsForm();
+}
+function refreshAll(){ BUNDLE=null; STALE=false; Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
+function currentTab(){ return document.querySelector('#tabs .tab.active').dataset.tab; }
+
+// ============================================================
+//  LIVE
+// ============================================================
+const ALL_SHIFTS=["over night","over night 12 h","morning 12 h","night","morning","over shift (m)","over shift (n)","over shift (on)"];
+let liveData=null;
+let liveState={ shifts:new Set(), modalities:new Set(), passes:new Set(), tab:'all', search:'', filters:{date:'',qtc:'',labeler:'',device:'',queue:''} };
+
+function buildLive(db){
+  const H=db.headers.map(h=>String(h).replace(/\s+/g,' ').trim()), hl=H.map(h=>h.toLowerCase());
+  const shiftI=hl.indexOf('shift'); let tsIdx=hl.indexOf('timestamp'); if(tsIdx<0) tsIdx=hl.findIndex(h=>h.includes('date'));
+  let loc=hl.indexOf('unit'); if(loc<0) loc=hl.indexOf('location');
+  const rows=[];
+  db.rows.forEach(r=>{
+    if(r.every(c=>c===''||c==null)) return;
+    if(shiftI>=0 && !ALL_SHIFTS.includes(String(r[shiftI]||'').trim().toLowerCase())) return;
+    const row=r.slice(0,H.length), t=parseTS(row[tsIdx]);
+    if(t) row[tsIdx]=t.str;
+    const s=t&&shiftOf(loc>=0?row[loc]:'',t);
+    row.sh=s?s.shift:normShift(shiftI>=0?row[shiftI]:'');
+    rows.push(row);
+  });
+  const names=["Shift","Unit","Qtc Name","Yubikey Email","Labeler Name","Pc No","Modality","Queue Name","Pass"];
+  const si={}, so={};
+  names.forEach(n=>{ const i=hl.indexOf(n.toLowerCase()); if(i>=0){ si[n]=i; so[n]=[...new Set(rows.map(r=>String(r[i]||'').trim()).filter(Boolean))].sort(); } });
+  so['Shift']=['M','N','ON'];
+  so['_dates']=[...new Set(rows.map(r=>tsIdx>=0?String(r[tsIdx]||'').substring(0,10):'').filter(x=>/^\d{4}-/.test(x)))].sort().reverse();
+  const locations=loc>=0?[...new Set(rows.map(r=>String(r[loc]||'').trim()).filter(Boolean))].sort():[];
+  return { headers:H.map(h=>h||'—'), rows, slicerIndices:si, slicerOptions:so, tsIdx, locationColIdx:loc, locations, linkIdx:hl.indexOf('task link'), idIdx:hl.indexOf('task id') };
+}
+function loadLive(){
+  document.getElementById('view-live').innerHTML=LOADING;
+  getSheet(CFG.DB).then(db=>{ liveData=buildLive(db); renderLiveShell(); if(liveData.slicerIndices['Qtc Name']===undefined) document.getElementById('view-live').insertAdjacentHTML('afterbegin','<div class="err" style="margin-bottom:12px">⚠️ عمود QTC Name مش موجود في Data Base. الأعمدة: '+esc(liveData.headers.join(' | '))+'</div>'); })
+    .catch(e=>{ document.getElementById('view-live').innerHTML=errBox('Failed to load: '+e.message,'loadLive'); });
+}
+function renderLiveShell(){
+  const el=document.getElementById('view-live');
+  const opt=a=>(a||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  const roomTabs=liveData.locations.map(l=>`<button class="tab" data-room="${esc(l)}">📍 ${esc(l)}</button>`).join('');
+  const so=liveData.slicerOptions;
+  el.innerHTML=`
+    <div class="panel"><div class="panel-body">
+      <input id="globalSearch" placeholder="🔎 Search anything… (name, email, task id, device…)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--chip-line);margin-bottom:12px;background:var(--chip);color:var(--ink);font-size:13px">
+      <div class="filters" id="shiftChips"></div><div class="filters" id="modalityChips"></div><div class="filters" id="passChips"></div>
+      <div class="filters">
+        <select id="fDate"><option value="">📅 All Dates</option>${opt(so['_dates'])}</select>
+        <select id="fQtc"><option value="">🔖 All QTC</option>${opt(so['Qtc Name'])}</select>
+        <select id="fLabeler"><option value="">👤 All Labelers</option>${opt(so['Labeler Name'])}</select>
+        <select id="fDevice"><option value="">🖥️ All Devices</option>${opt(so['Pc No'])}</select>
+        <select id="fQueue"><option value="">📁 All Queues</option>${opt(so['Queue Name'])}</select>
+        <button class="pill" onclick="clearLiveFilters()">✕ Clear All</button>
+      </div>
+      <div class="tagbar" id="activeTags"></div>
+    </div></div>
+    <div class="tabs" id="roomTabs" style="border-radius:12px;border:1px solid var(--line);margin-bottom:14px">
+      <button class="tab active" data-room="all">🌐 All</button><button class="tab" data-room="__total__">📊 Total Submit</button><button class="tab" data-room="__top__">🏆 Top Performers</button>${roomTabs}
+    </div>
+    <div id="liveBody"></div>`;
+  const chips=(id,label,arr,set,attr)=>{
+    document.getElementById(id).innerHTML=`<label style="align-self:center">${label}</label>`+(arr||[]).map(s=>`<span class="pill ${set.has(s)?'on':''}" data-v="${esc(s)}">${esc(s)}</span>`).join('');
+    document.getElementById(id).addEventListener('click',e=>{ const p=e.target.closest('.pill'); if(!p) return; const v=p.dataset.v; set.has(v)?set.delete(v):set.add(v); p.classList.toggle('on'); renderLiveBody(); });
+  };
+  chips('shiftChips','⏱ Shift:',so['Shift'],liveState.shifts); chips('modalityChips','🔬 Modality:',so['Modality'],liveState.modalities); chips('passChips','✅ Pass:',so['Pass'],liveState.passes);
+  const fm={fDate:'date',fQtc:'qtc',fLabeler:'labeler',fDevice:'device',fQueue:'queue'};
+  Object.entries(fm).forEach(([id,k])=>{ const s=document.getElementById(id); s.value=liveState.filters[k]||''; s.onchange=onLiveFilterChange; });
+  ['fQtc','fLabeler','fDevice','fQueue'].forEach(id=>makeSearchable(document.getElementById(id)));
+  const g=document.getElementById('globalSearch'); g.value=liveState.search;
+  g.oninput=debounce(()=>{ liveState.search=g.value.toLowerCase(); renderLiveBody(); },250);
+  document.getElementById('roomTabs').addEventListener('click',e=>{
+    const b=e.target.closest('.tab'); if(!b) return;
+    document.querySelectorAll('#roomTabs .tab').forEach(t=>t.classList.toggle('active',t===b));
+    liveState.tab=b.dataset.room; renderLiveBody();
+  });
+  renderLiveBody();
+}
+function onLiveFilterChange(){
+  const f=liveState.filters;
+  f.date=document.getElementById('fDate').value; f.qtc=document.getElementById('fQtc').value; f.labeler=document.getElementById('fLabeler').value;
+  f.device=document.getElementById('fDevice').value; f.queue=document.getElementById('fQueue').value; renderLiveBody();
+}
+function clearLiveFilters(){ liveState={shifts:new Set(),modalities:new Set(),passes:new Set(),tab:'all',search:'',filters:{date:'',qtc:'',labeler:'',device:'',queue:''}}; renderLiveShell(); }
+// ---------- روابط التاسكات (تتفتح في تاب جديد) ----------
+function cellHtml(c,i,r){
+  const L=liveData.linkIdx, url=L>=0?String(r[L]||''):'';
+  if(/^https?:\/\//.test(url)){
+    if(i===L) return `<td><a class="lnk" href="${esc(url)}" target="_blank" rel="noopener">Open ↗</a></td>`;
+    if(i===liveData.idIdx) return `<td><a class="lnk" href="${esc(url)}" target="_blank" rel="noopener">${esc(c)} ↗</a></td>`;
+  }
+  return '<td>'+esc(c)+'</td>';
+}
+function linkTask(r){
+  return /^https?:\/\//.test(r.link||'') ? `<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.taskId||'open')} ↗</a>` : esc(r.taskId);
+}
+// ---------- منتقي التاريخ/الوقت بشكل الداشبورد (بدل فلتر المتصفح) ----------
+function dpInit(id,withTime,init){
+  const host=document.getElementById(id); let cur=new Date(init), view=new Date(cur.getFullYear(),cur.getMonth(),1);
+  host.innerHTML='<button type="button" class="ss-btn"></button><div class="ss-pop dp-pop"></div>';
+  const btn=host.children[0], pop=host.children[1];
+  const iso=()=>cur.getFullYear()+'-'+pad(cur.getMonth()+1)+'-'+pad(cur.getDate())+(withTime?'T'+pad(cur.getHours())+':'+pad(cur.getMinutes()):'');
+  const sync=()=>{ host.value=iso(); btn.textContent='📅 '+iso().replace('T','  ⏰ ')+' ▾'; };
+  const fire=()=>{ sync(); if(host.onchange) host.onchange(); };
+  const draw=()=>{
+    const y=view.getFullYear(), m=view.getMonth(), first=(new Date(y,m,1).getDay()+1)%7, days=new Date(y,m+1,0).getDate();
+    let cells=''; for(let i=0;i<first;i++) cells+='<span></span>';
+    for(let d=1;d<=days;d++){ const on=cur.getFullYear()===y&&cur.getMonth()===m&&cur.getDate()===d; cells+=`<button type="button" class="dp-d ${on?'on':''}" data-d="${d}">${d}</button>`; }
+    const opt=(n,sel)=>Array.from({length:n},(_,i)=>`<option value="${i}" ${i===sel?'selected':''}>${pad(i)}</option>`).join('');
+    pop.innerHTML=`<div class="dp-h"><button type="button" data-nav="-1">‹</button><b>${MON[m]} ${y}</b><button type="button" data-nav="1">›</button></div><div class="dp-w">${['Sa','Su','Mo','Tu','We','Th','Fr'].map(x=>'<i>'+x+'</i>').join('')}</div><div class="dp-g">${cells}</div>${withTime?`<div class="dp-t">⏰ <select data-t="h">${opt(24,cur.getHours())}</select> : <select data-t="m">${opt(60,cur.getMinutes())}</select></div>`:''}<div class="dp-f"><button type="button" data-today="1">Today</button></div>`;
+  };
+  pop.onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return;
+    if(b.dataset.nav){ view=new Date(view.getFullYear(),view.getMonth()+Number(b.dataset.nav),1); draw(); }
+    else if(b.dataset.d){ cur=new Date(view.getFullYear(),view.getMonth(),Number(b.dataset.d),cur.getHours(),cur.getMinutes()); fire(); if(withTime) draw(); else closeSS(); }
+    else if(b.dataset.today){ const n=new Date(); cur=new Date(n.getFullYear(),n.getMonth(),n.getDate(),cur.getHours(),cur.getMinutes()); view=new Date(cur.getFullYear(),cur.getMonth(),1); fire(); if(withTime) draw(); else closeSS(); } };
+  pop.onchange=e=>{ const t=e.target.dataset.t; if(!t) return; if(t==='h') cur.setHours(+e.target.value); else cur.setMinutes(+e.target.value); fire(); };
+  btn.onclick=e=>{ e.stopPropagation(); const open=pop.style.display==='block'; closeSS(); if(!open){ view=new Date(cur.getFullYear(),cur.getMonth(),1); draw(); pop.style.display='block'; const pn=host.closest('.panel'); if(pn) pn.classList.add('ss-open'); } };
+  sync();
+}
+function getFilteredLiveRows(){
+  const si=liveData.slicerIndices, F=liveState.filters; let rows=liveData.rows;
+  if(liveState.shifts.size) rows=rows.filter(r=>liveState.shifts.has(r.sh));
+  if(liveState.modalities.size) rows=rows.filter(r=>liveState.modalities.has(r[si['Modality']]));
+  if(liveState.passes.size) rows=rows.filter(r=>liveState.passes.has(r[si['Pass']]));
+  if(F.date) rows=rows.filter(r=>String(r[liveData.tsIdx]||'').startsWith(F.date));
+  if(F.qtc) rows=rows.filter(r=>r[si['Qtc Name']]===F.qtc);
+  if(F.labeler) rows=rows.filter(r=>r[si['Labeler Name']]===F.labeler);
+  if(F.device) rows=rows.filter(r=>r[si['Pc No']]===F.device);
+  if(F.queue) rows=rows.filter(r=>r[si['Queue Name']]===F.queue);
+  if(!['all','__total__','__top__'].includes(liveState.tab) && liveData.locationColIdx>=0) rows=rows.filter(r=>r[liveData.locationColIdx]===liveState.tab);
+  if(liveState.search) rows=rows.filter(r=>r.some(c=>String(c).toLowerCase().includes(liveState.search)));
+  return rows;
+}
+function renderActiveTags(){
+  const tags=[];
+  if(liveState.search) tags.push(['Search: '+liveState.search,()=>{liveState.search='';renderLiveShell();}]);
+  liveState.shifts.forEach(s=>tags.push(['Shift: '+s,()=>{liveState.shifts.delete(s);renderLiveShell();}]));
+  liveState.modalities.forEach(s=>tags.push(['Modality: '+s,()=>{liveState.modalities.delete(s);renderLiveShell();}]));
+  liveState.passes.forEach(s=>tags.push(['Pass: '+s,()=>{liveState.passes.delete(s);renderLiveShell();}]));
+  Object.entries(liveState.filters).forEach(([k,v])=>{ if(v) tags.push([k+': '+v,()=>{liveState.filters[k]='';renderLiveShell();}]); });
+  const box=document.getElementById('activeTags'); if(!box) return;
+  box.innerHTML=tags.map((t,i)=>`<span class="tag">${esc(t[0])} <button onclick="window.__tg${i}()">✕</button></span>`).join('');
+  tags.forEach((t,i)=>{ window['__tg'+i]=t[1]; });
+}
+function groupCount(rows,idx){ const m={}; rows.forEach(r=>{ const k=r[idx]||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
+function renderLiveBody(){
+  renderLiveBody_();
+  const c=taskCardHtml(); if(c) document.getElementById('liveBody').insertAdjacentHTML('afterbegin',c);
+}
+function taskCardHtml(){
+  const q=normId(liveState.search).toLowerCase(); if(q.length<5) return '';
+  const L=liveData, c=cmap(L.headers), g=(r,n)=>{ const i=ci(c,[n]); return i>=0?r[i]:''; };
+  if(L.idIdx<0) return '';
+  if(!L._byId){ L._byId={}; L.rows.forEach(r=>{ const id=normId(r[L.idIdx]).toLowerCase(); if(id) (L._byId[id]=L._byId[id]||[]).push(r); }); }
+  const hits=L._byId[q]; if(!hits) return '';
+  let qr=null; const qp=SHEETS[CFG.QPT];
+  if(qp){ if(!L._qIdx){ L._qm=cmap(qp.headers); const i=ci(L._qm,['actual id']); L._qIdx={}; qp.rows.forEach(r=>{ const k=normId(r[i]).toLowerCase(); if(k) L._qIdx[k]=r; }); } qr=L._qIdx[q]; }
+  const qv=n=>qr?fmtPct(toNum(qr[ci(L._qm,[n])])):'-';
+  const kv=(k,v)=>`<div><span style="color:var(--ink-soft);font-size:10.5px">${k}</span><br><b>${esc(v)||'-'}</b></div>`;
+  const cards=hits.map(r=>{
+    const link=String(r[L.linkIdx]||''), ok=/^https?:\/\//.test(link);
+    return `<div class="card" style="margin-bottom:8px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+      ${kv('🕐 Submitted at',r[L.tsIdx])}${kv('⏱ Shift',r.sh)}${kv('📍 Room',L.locationColIdx>=0?r[L.locationColIdx]:'')}${kv('🖥️ PC',g(r,'pc no'))}
+      ${kv('🔖 QC',g(r,'qtc name'))}${kv('👤 Labeler',g(r,'labeler name'))}${kv('✉️ Email',g(r,'yubikey email'))}${kv('📁 Queue',g(r,'queue name'))}
+      ${kv('🔬 Modality',g(r,'modality'))}${kv('✅ Pass',g(r,'pass'))}${kv('🧱 Stage',g(r,'stage'))}${kv('📦 Objects',g(r,'object count'))}</div>
+      ${ok?`<a class="btn dark" style="margin-top:10px;text-decoration:none" href="${esc(link)}" target="_blank" rel="noopener">🔗 Open Task ↗</a>`:''}</div>`;
+  }).join('');
+  return `<div class="panel"><div class="panel-head"><h3>🔎 Task ${esc(q)} — ${hits.length} submit${hits.length>1?'s':''}</h3>
+    <span>Quality: Artifacts ${qv('artifacts')} · Attribute ${qv('attribute')} · Total ${qv('total accuracy')}</span></div><div class="panel-body">${cards}</div></div>`;
+}
+function renderLiveBody_(){
+  renderActiveTags();
+  const rows=getFilteredLiveRows(), si=liveData.slicerIndices, body=document.getElementById('liveBody');
+  if(liveState.tab==='__total__'){ body.innerHTML=renderTotalSubmitView(rows,si); return; }
+  if(liveState.tab==='__top__'){ body.innerHTML=renderTopPerformersView(rows,si); return; }
+  const uniq=i=>new Set(rows.map(r=>r[i]).filter(Boolean)).size;
+  const devices={}, qt={}, mc={}, pc={};
+  rows.forEach(r=>{
+    const d=r[si['Pc No']];
+    if(d){ if(!devices[d]) devices[d]={count:0,labeler:r[si['Labeler Name']],email:r[si['Yubikey Email']]}; devices[d].count++; }
+    const q=r[si['Queue Name']]||'—', m=r[si['Modality']]||'—', p=r[si['Pass']]||'—';
+    qt[q]=qt[q]||{}; qt[q][m+'|'+p]=(qt[q][m+'|'+p]||0)+1; mc[m]=(mc[m]||0)+1; pc[p]=(pc[p]||0)+1;
+  });
+  body.innerHTML=`
+    <div class="stat-row"><div class="stat"><b>${rows.length}</b><span>TOTAL ROWS</span></div><div class="stat"><b>${uniq(si['Pc No'])}</b><span>DEVICES</span></div><div class="stat"><b>${uniq(si['Queue Name'])}</b><span>QUEUES</span></div><div class="stat"><b>${uniq(si['Labeler Name'])}</b><span>LABELERS</span></div></div>
+    <div class="stat-row">${Object.entries(mc).map(([k,n])=>`<div class="stat"><b>${n}</b><span>🔬 ${esc(k).toUpperCase()}</span></div>`).join('')}${Object.entries(pc).map(([k,n])=>`<div class="stat"><b>${n}</b><span>✅ ${esc(k).toUpperCase()}</span></div>`).join('')}</div>
+    <div class="panel"><div class="panel-head"><h3>🖥️ Device Submit Counts</h3><span>${Object.keys(devices).length} devices</span></div><div class="panel-body"><div class="grid-cards">
+      ${Object.entries(devices).map(([d,i])=>`<div class="card"><div style="display:flex;justify-content:space-between"><b>${esc(d)}</b><span class="badge">${i.count}</span></div><div style="font-size:11.5px;margin-top:4px">👤 ${esc(i.labeler)}</div><div style="font-size:10.5px;color:var(--ink-soft)">✉️ ${esc(i.email)}</div></div>`).join('')||'<span style="color:var(--ink-soft)">No devices</span>'}
+    </div></div></div>
+    <div class="panel"><div class="panel-head"><h3>📁 Queue — Total Submits</h3><span>${Object.keys(qt).length} queues</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Queue</th><th>Modality</th><th>Pass</th><th>Count</th></tr></thead><tbody>
+      ${Object.entries(qt).flatMap(([q,c])=>Object.entries(c).map(([k,n])=>{ const [m,p]=k.split('|'); return `<tr><td>${esc(q)}</td><td>${esc(m)}</td><td>${esc(p)}</td><td><b>${n}</b></td></tr>`; })).join('')||'<tr><td colspan="4">No data</td></tr>'}</tbody></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>📋 Row Detail</h3><span>${rows.length} rows (showing up to 300)</span></div><div class="panel-body"><div class="table-wrap"><table><thead><tr>${liveData.headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.slice(0,300).map(r=>'<tr>'+r.map((c,i)=>cellHtml(c,i,r)).join('')+'</tr>').join('')}</tbody></table></div></div></div>`;
+}
+let totalBy='qc';
+function totalTable(title,rows,idx){
+  const m={}; rows.forEach(r=>{ const k=r[idx]||'—'; const o=m[k]=m[k]||{n:0,M:0,N:0,ON:0}; o.n++; if(o[r.sh]!==undefined) o[r.sh]++; });
+  const data=Object.entries(m).sort((a,b)=>b[1].n-a[1].n);
+  return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th><th>M</th><th>N</th><th>ON</th></tr></thead><tbody>${data.map(([k,o])=>`<tr><td>${esc(k)}</td><td><b>${o.n}</b></td><td>${o.M}</td><td>${o.N}</td><td>${o.ON}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}</tbody></table></div></div>`;
+}
+function renderTotalSubmitView(rows,si){
+  const simple=(title,data)=>`<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n])=>`<tr><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="2">No data</td></tr>'}</tbody></table></div></div>`;
+  let html=simple('⏱ By Shift',groupCountFn(rows,r=>r.sh));
+  if(liveData.locationColIdx>=0) html+=simple('📍 By Room',groupCount(rows,liveData.locationColIdx));
+  const iQc=si['Qtc Name'];
+  if(iQc!==undefined && liveData.locationColIdx>=0){
+    const m={};
+    rows.forEach(r=>{ const qc=r[iQc]||'—', room=r[liveData.locationColIdx]||'—', sh=r.sh||'—'; const k=qc+'||'+sh+'||'+room; m[k]=m[k]||{qc,sh,room,n:0}; m[k].n++; });
+    const list=Object.values(m).sort((a,b)=>a.qc.localeCompare(b.qc)||a.sh.localeCompare(b.sh)||a.room.localeCompare(b.room));
+    html+=`<div class="panel"><div class="panel-head"><h3>🔖 QC Totals — by Shift &amp; Room</h3><span>${list.length} rows</span></div><div class="panel-body table-wrap"><table><thead><tr><th>QC</th><th>Shift</th><th>Room</th><th>Total Submits</th></tr></thead><tbody>${list.map(x=>`<tr><td>${esc(x.qc)}</td><td class="sh-${x.sh}">${esc(x.sh)}</td><td>${esc(x.room)}</td><td><b>${x.n}</b></td></tr>`).join('')||'<tr><td colspan="4">No data</td></tr>'}</tbody></table></div></div>`;
+  }
+  const opts=[['qc','🔖 QC'],['labeler','👤 Labeler'],['queue','📁 Queue']];
+  html+=`<div class="panel"><div class="panel-body"><div class="filters" style="margin:0"><label>Group by:</label>${opts.map(([v,t])=>`<button class="pill ${totalBy===v?'on':''}" onclick="totalBy='${v}';renderLiveBody()">${t}</button>`).join('')}</div></div></div>`;
+  const idx=totalBy==='qc'?si['Qtc Name']:totalBy==='labeler'?si['Labeler Name']:si['Queue Name'];
+  if(idx!==undefined) html+=totalTable(opts.find(o=>o[0]===totalBy)[1]+' — Total Submits',rows,idx);
+  return html;
+}
+let topPerfMode='labeler';
+function renderTopPerformersView(rows,si){
+  const idx = topPerfMode==='labeler' ? si['Labeler Name'] : si['Qtc Name'];
+  const data=groupCount(rows,idx).slice(0,20), med=['🥇','🥈','🥉'];
+  const label = topPerfMode==='labeler' ? 'Labeler' : 'QC';
+  return `<div class="panel"><div class="panel-head"><h3>🏆 Top Performers (${label}s)</h3>
+    <div class="filters" style="margin:0"><button class="pill ${topPerfMode==='labeler'?'on':''}" onclick="topPerfMode='labeler';renderLiveBody()">👤 Labelers</button><button class="pill ${topPerfMode==='qc'?'on':''}" onclick="topPerfMode='qc';renderLiveBody()">🔖 QCs</button></div>
+    <span>Top ${data.length}</span></div><div class="panel-body table-wrap"><table><thead><tr><th>#</th><th>${label}</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n],i)=>`<tr><td><span class="rank">${med[i]||(i+1)}</span></td><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ============================================================
+//  QC QUALITY — Quality Per Task × Data Base (Actual ID) + fallback Actual Email → Teams
+// ============================================================
+let qcStats={}, qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='totals';
+// توحيد شكل الـ ID عشان مطابقة "1463495465" مع "1463495465.0" أو " 1463495465 " تنجح برضو
+function normId(v){ return String(v==null?'':v).trim().replace(/\.0+$/,''); }
+function buildQC(qpt, db, teams, empty, qpl){
+  const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']),
+        iArt=ci(q,['artifacts']), iAttr=ci(q,['attribute']), iAcc=ci(q,['total accuracy']);
+  const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']), iLk=ci(d,['task link']);
+  const byTask={};
+  db.rows.forEach(r=>{
+    const id=normId(gc(r,iT)); if(!id) return;
+    const isQA=/QA|QUALITY/i.test(String(gc(r,iP)||''));
+    if(!byTask[id]||isQA) byTask[id]={ qtc:String(gc(r,iQ)||'').trim(), ts:gc(r,iTs), unit:gc(r,iU), labeler:String(gc(r,iL)||'').trim(), link:String(gc(r,iLk)||'').trim() };
+  });
+  const owners=loadOwners(teams,empty); let minExp='';
+  const rows=[];
+  qpt.rows.forEach(r=>{
+    const id=normId(gc(r,iId)); if(!id) return;
+    const ex=String(gc(r,iExp)||'').substring(0,10); if(ex&&(!minExp||ex<minExp)) minExp=ex;
+    const base={ taskId:id, tasks:1, artifacts:toNum(gc(r,iArt)), attribute:toNum(gc(r,iAttr)), totalAccuracy:toNum(gc(r,iAcc)) };
+    const t=byTask[id];
+    if(t){
+      const s=shiftOf(t.unit,parseTS(t.ts));
+      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:s?s.shift:(normShift(shiftFromName(t.qtc))||'—'), labeler:t.labeler, link:t.link, source:'Data Base'});
+    } else {
+      const em=String(gc(r,iEm)||''), m=em.match(/\d{6}/), o=m&&owners[m[0]];
+      if(o) rows.push({...base, qtc:cleanName(o.qtc)||'—', shiftN:o.shift||'—', labeler:em, source:'Teams'});
+      else rows.push({...base, qtc:'—', shiftN:'—', labeler:em, source:'Unmatched'});
+    }
+  });
+  return { rows, weekTag:qplWeek(qpl)||weekKey(minExp), stats:{ qpt:qpt.rows.length, noId:qpt.rows.length-rows.length,
+    db:rows.filter(r=>r.source==='Data Base').length, teams:rows.filter(r=>r.source==='Teams').length, un:rows.filter(r=>r.source==='Unmatched').length } };
+}
+function loadQC(){
+  document.getElementById('view-qc').innerHTML=LOADING;
+  Promise.all([getSheet(CFG.QPT),getSheet(CFG.DB),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY),optSheet(CFG.QPL)])
+    .then(([a,b,c,e,q])=>{ const r=buildQC(a,b,c,e,q); qcRowsData=r.rows; qcWeek=r.weekTag; qcStats=r.stats; renderQC(); })
+    .catch(e=>{ document.getElementById('view-qc').innerHTML=errBox(e.message,'loadQC'); });
+}
+function renderQC(){
+  const el=document.getElementById('view-qc'); qcView='totals';
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcWeek))}</h3><span id="qcCount"></span></div><div class="panel-body">
+    <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button></div>
+    ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}
+    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}</div></div></div><div id="qcContent"></div>`;
+  document.getElementById('qcViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; qcView=b.dataset.view;
+    el.querySelectorAll('#qcViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderQCContent(); };
+  wireQf('qcBar',qcSt,renderQCContent,renderQC); renderQCContent();
+}
+function renderQCContent(){
+  const rows=qcRowsData.filter(r=>(!qcSt.shift||r.shiftN===qcSt.shift)&&(!qcSt.qtc||r.qtc===qcSt.qtc)).map(r=>({...r,week:qcWeek}));
+  document.getElementById('qcCount').textContent=rows.length+' tasks';
+  const box=document.getElementById('qcContent');
+  if(qcView==='individual'){
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>QC</th><th>Shift</th><th>Labeler</th><th>Source</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${linkTask(r)}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.labeler)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
+  }
+  if(qcView==='qc'){
+    const g={}; rows.forEach(r=>{ const k=r.qtc+'||'+r.shiftN; (g[k]=g[k]||{qtc:r.qtc,sh:r.shiftN,rows:[]}).rows.push(r); });
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>QC</th><th>Shift</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${Object.values(g).sort((a,b)=>(a.qtc+a.sh).localeCompare(b.qtc+b.sh)).map(x=>`<tr><td>${esc(x.qtc)}</td><td class="sh-${x.sh}">${esc(x.sh)}</td><td>${x.rows.length}</td><td>${fmtPct(wavg(x.rows,'artifacts'))}</td><td>${fmtPct(wavg(x.rows,'attribute'))}</td><td>${fmtPct(wavg(x.rows,'totalAccuracy'))}</td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}</tbody></table></div></div>`; return;
+  }
+  box.innerHTML=totalsHtml(rows.map(r=>({...r,shift:r.shiftN})),false);
+}
+
+// ============================================================
+//  TEAMS QUALITY — Quality Per Labeler
+// ============================================================
+let tqData=null, tqSt={shift:'',qtc:''}, tqView='totals';
+function buildTQ(qpl,teams,empty){
+  const q=cmap(qpl.headers), iLab=ci(q,['labeler']), iW=ci(q,['week']), iT=ci(q,['tasks']), iA=ci(q,['artifacts']), iAt=ci(q,['attribute']), iAc=ci(q,['total accuracy']);
+  const owners=loadOwners(teams,empty), rows=[];
+  qpl.rows.forEach(r=>{
+    const raw=String(gc(r,iLab)||'').trim(); if(!raw) return;
+    const m=raw.match(/\d{6}/), o=m?owners[m[0]]:null;
+    rows.push({ labelerRaw:raw, week:weekKey(gc(r,iW)), qtc:o?cleanName(o.qtc):'', shiftN:o?(o.shift||'—'):'—', location:o?o.location:'', source:o?o.source:'Unmatched',
+      tasks:Number(toNum(gc(r,iT)))||0, artifacts:toNum(gc(r,iA)), attribute:toNum(gc(r,iAt)), totalAccuracy:toNum(gc(r,iAc)) });
+  });
+  return rows;
+}
+function loadTeamsQ(){
+  document.getElementById('view-teamsq').innerHTML=LOADING;
+  Promise.all([getSheet(CFG.QPL),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY)])
+    .then(([a,b,c])=>{ tqData=buildTQ(a,b,c); renderTeamsQ(); })
+    .catch(e=>{ document.getElementById('view-teamsq').innerHTML=errBox(e.message,'loadTeamsQ'); });
+}
+function renderTeamsQ(){
+  const el=document.getElementById('view-teamsq'); tqView='totals';
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>👥 Teams Quality</h3><span id="tqCount"></span></div><div class="panel-body">
+    <div class="filters" id="tqViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">👤 Individual</button></div>
+    ${qfBar('tqBar',tqData,tqSt)}</div></div><div id="tqContent"></div>`;
+  document.getElementById('tqViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; tqView=b.dataset.view;
+    el.querySelectorAll('#tqViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderTeamsQContent(); };
+  wireQf('tqBar',tqSt,renderTeamsQContent,renderTeamsQ); renderTeamsQContent();
+}
+function renderTeamsQContent(){
+  const rows=tqData.filter(r=>(!tqSt.shift||r.shiftN===tqSt.shift)&&(!tqSt.qtc||r.qtc===tqSt.qtc));
+  document.getElementById('tqCount').textContent=rows.length+' flashes';
+  const box=document.getElementById('tqContent');
+  if(tqView==='individual'){
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>ID/Labeler</th><th>Week</th><th>QC</th><th>Shift</th><th>Location</th><th>Source</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.labelerRaw)}</td><td>${esc(weekLabel(r.week))}</td><td>${esc(r.qtc)}</td><td class="sh-${r.shiftN}">${esc(r.shiftN)}</td><td>${esc(r.location)}</td><td><span class="badge">${esc(r.source)}</span></td><td>${r.tasks}</td><td>${fmtPct(r.artifacts)}</td><td>${fmtPct(r.attribute)}</td><td>${fmtPct(r.totalAccuracy)}</td></tr>`).join('')}</tbody></table></div></div>`; return;
+  }
+  if(tqView==='qc'){
+    const g={}; rows.forEach(r=>{ const k=(r.week||'—')+'||'+(r.qtc||'—'); (g[k]=g[k]||{week:r.week,qtc:r.qtc||'—',rows:[]}).rows.push(r); });
+    box.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Week</th><th>QC</th><th>Tasks</th><th>Artifacts</th><th>Attribute</th><th>Total Accuracy</th></tr></thead><tbody>${Object.values(g).sort((a,b)=>(String(a.week)+a.qtc).localeCompare(String(b.week)+b.qtc)).map(x=>`<tr><td>${esc(weekLabel(x.week))}</td><td>${esc(x.qtc)}</td><td>${x.rows.reduce((s,r)=>s+r.tasks,0)}</td><td>${fmtPct(wavg(x.rows,'artifacts'))}</td><td>${fmtPct(wavg(x.rows,'attribute'))}</td><td>${fmtPct(wavg(x.rows,'totalAccuracy'))}</td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}</tbody></table></div></div>`; return;
+  }
+  box.innerHTML=totalsHtml(rows.map(r=>({...r,shift:r.shiftN})),false);
+}
+
+// ============================================================
+//  FAST SUBMITS — شيفت بالوقت + فلتر (Labeler/QC) + (Lidar/Lane) + Pass
+// ============================================================
+let fastRange={from:null,to:null}, fastReq=0, fastF={shift:'',role:'',mod:'',pass:'QA'};
+const FAST_ROWS=[
+  ['shift','⏱ Shift:',[['','All'],['M','M'],['N','N'],['ON','ON']]],
+  ['role','👥 Who:',[['','All'],['labeler','👤 Labeler'],['qc','🔖 QC']]],
+  ['mod','🔬 Modality:',[['','All'],['lidar','Lidar'],['lane','Lane Line']]],
+  ['pass','✅ Pass:',[['QA','QA'],['FP','FP'],['all','All']]]
+];
+function renderFastForm(){
+  const el=document.getElementById('view-fast');
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>⚡ Fast Submits Audit</h3></div><div class="panel-body">
+    <div class="filters" id="fastPresets"><button class="pill on" data-preset="24h">🕐 Last 24h</button><button class="pill" data-preset="today">📆 Today</button><button class="pill" data-preset="yesterday">📅 Yesterday</button><button class="pill" data-preset="7d">🗓️ Last 7 Days</button><button class="pill" data-preset="custom">🛠️ Custom Range</button></div>
+    <div class="filters" id="fastCustomRange" style="display:none"><label>From:</label><span class="dp" id="fastFrom"></span><label>To:</label><span class="dp" id="fastTo"></span></div>
+    <div id="fastFilters">${FAST_ROWS.map(([k,l,o])=>`<div class="filters"><label>${l}</label>${o.map(([v,t])=>`<button class="pill ${fastF[k]===v?'on':''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`).join('')}</div>
+    <div id="fastResults"></div></div></div>`;
+  { const t0=new Date(); t0.setHours(0,0,0,0); dpInit('fastFrom',true,t0); dpInit('fastTo',true,new Date()); }
+  const setPreset=p=>{ const now=new Date(); let from,to=now;
+    if(p==='24h') from=new Date(now-86400000);
+    else if(p==='today'){ from=new Date(now); from.setHours(0,0,0,0); }
+    else if(p==='yesterday'){ to=new Date(now); to.setHours(0,0,0,0); from=new Date(to-86400000); }
+    else if(p==='7d') from=new Date(now-7*86400000);
+    fastRange={from,to}; };
+  document.getElementById('fastPresets').addEventListener('click',e=>{ const b=e.target.closest('.pill'); if(!b) return;
+    document.querySelectorAll('#fastPresets .pill').forEach(p=>p.classList.toggle('on',p===b));
+    const p=b.dataset.preset; document.getElementById('fastCustomRange').style.display=p==='custom'?'flex':'none';
+    if(p!=='custom') setPreset(p); runFastAudit(); });
+  document.getElementById('fastFilters').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return;
+    fastF[b.dataset.k]=b.dataset.v; b.parentNode.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===b)); runFastAudit(); };
+  const auto=debounce(runFastAudit,700); document.getElementById('fastFrom').onchange=auto; document.getElementById('fastTo').onchange=auto;
+  setPreset('24h'); runFastAudit();
+}
+function runFastAudit(){
+  let from,to;
+  if(document.getElementById('fastCustomRange').style.display!=='none'){
+    from=new Date(document.getElementById('fastFrom').value); to=new Date(document.getElementById('fastTo').value);
+    if(isNaN(from)||isNaN(to)) return;
+    if(from>to){ ++fastReq; document.getElementById('fastResults').innerHTML='<div class="err">⚠️ تاريخ "From" ('+fmtDT(from)+') بعد تاريخ "To" ('+fmtDT(to)+'). عدّل التاريخين.</div>'; return; }
+  } else { from=fastRange.from; to=fastRange.to; }
+  const my=++fastReq, box=document.getElementById('fastResults'); box.innerHTML=LOADING;
+  getSheet(CFG.DB,true).then(db=>{ if(my!==fastReq) return; renderFastResults(auditFast(db,from,to)); })
+    .catch(e=>{ if(my!==fastReq) return; box.innerHTML=errBox(e.message,'runFastAudit'); });
+}
+function fmtDT(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+const isQAPass=p=>/QA|QUALITY|QQ|SPOT/.test(String(p||'').toUpperCase());
+function auditFast(db,from,to){
+  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),unit:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),
+    pass:ci(c,['pass']),pc:ci(c,['pc no']),obj:ci(c,['object count','objects count','objects']),tid:ci(c,['task id']),link:ci(c,['task link'])};
+  if(I.qc<0) throw new Error('Column "QTC Name" not found in Data Base. Columns: '+db.headers.join(' | '));
+  const G={labelerLane:{},labelerLidar:{},qcLane:{},qcLidar:{}};
+  db.rows.forEach((r,i)=>{
+    if(db.orange&&db.orange[i]) return;
+    const pass=String(gc(r,I.pass)||'').toUpperCase(), qa=isQAPass(pass);
+    if(fastF.pass==='QA'&&!qa) return; if(fastF.pass==='FP'&&qa) return;
+    const t=parseTS(gc(r,I.ts)); if(!t||t.ms<from||t.ms>to) return;
+    const sh=shiftOf(gc(r,I.unit),t).shift; if(fastF.shift&&sh!==fastF.shift) return;
+    const lane=/LANE|2D|LINE/i.test(String(gc(r,I.mod)||''));
+    if(fastF.mod==='lane'&&!lane) return; if(fastF.mod==='lidar'&&lane) return;
+    const lab=String(gc(r,I.lab)||'').trim(), qc=String(gc(r,I.qc)||'').trim();
+    const it={ ms:t.ms, shift:sh, unit:String(gc(r,I.unit)||'').trim(), queue:String(gc(r,I.q)||'').trim()||'Default Queue', key:String(gc(r,I.tid)||gc(r,I.link)||'').trim(),
+      taskId:String(gc(r,I.tid)||'').trim(), link:String(gc(r,I.link)||'').trim(), pc:String(gc(r,I.pc)||'').trim(), obj:gc(r,I.obj), labeler:lab, qc, pass };
+    const add=(key,name)=>{ if(!name) return; const m=G[key]; ((m[name]=m[name]||{})[it.queue]=m[name][it.queue]||[]).push(it); };
+    if(fastF.role!=='qc') add(lane?'labelerLane':'labelerLidar',lab);
+    if(fastF.role!=='labeler') add(lane?'qcLane':'qcLidar',qc);
+  });
+  return { labelerLane:auditGroups(G.labelerLane,10), labelerLidar:auditGroups(G.labelerLidar,10), qcLane:auditGroups(G.qcLane,5), qcLidar:auditGroups(G.qcLidar,5) };
+}
+function auditGroups(grouped,thr){
+  const out=[];
+  Object.keys(grouped).sort().forEach(name=>Object.keys(grouped[name]).forEach(queue=>{
+    const t=grouped[name][queue].slice().sort((a,b)=>a.ms-b.ms), fl=[];
+    for(let i=1;i<t.length;i++){
+      const p=t[i-1], c=t[i], diff=(c.ms-p.ms)/60000;
+      if(diff<thr){ if(!fl.length||fl[fl.length-1].key!==p.key) fl.push({...p,timeFormatted:fmtDT(new Date(p.ms)),diff:'Base Task'}); fl.push({...c,timeFormatted:fmtDT(new Date(c.ms)),diff:diff.toFixed(1)+' mins'}); }
+    }
+    if(fl.length) out.push({name,queueName:queue,count:fl.length,rows:fl});
+  }));
+  return out;
+}
+function renderFastResults(res){
+  const S=[['labelerLane','👤 Labeler — Lane Line (< 10 min)','labeler','lane'],['labelerLidar','👤 Labeler — Lidar (< 10 min)','labeler','lidar'],['qcLane','🔖 QC — Lane Line (< 5 min)','qc','lane'],['qcLidar','🔖 QC — Lidar (< 5 min)','qc','lidar']]
+    .filter(s=>(!fastF.role||fastF.role===s[2])&&(!fastF.mod||fastF.mod===s[3]));
+  document.getElementById('fastResults').innerHTML=S.map(([k,title])=>{
+    const g=res[k]||[]; if(!g.length) return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>0 violations</span></div></div>`;
+    const body=g.map(x=>`<div style="margin-bottom:10px"><div style="font-weight:700;background:var(--chip);padding:6px 10px;border-radius:6px">${esc(x.name)} — Queue: ${esc(x.queueName)} (${x.count} rows)</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Unit</th><th>Shift</th><th>Pass</th><th>Task ID</th><th>PC</th><th>Objects</th><th>Labeler</th><th>QC</th><th>Diff</th></tr></thead><tbody>${x.rows.map(r=>`<tr><td>${esc(r.timeFormatted)}</td><td>${esc(r.unit)}</td><td class="sh-${r.shift}">${esc(r.shift)}</td><td class="pass">${esc(r.pass)}</td><td>${esc(r.taskId)}</td><td>${esc(r.pc)}</td><td>${esc(r.obj)}</td><td>${esc(r.labeler)}</td><td>${esc(r.qc)}</td><td class="${r.diff!=='Base Task'?'diffbad':''}">${esc(r.diff)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+    return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${g.reduce((s,x)=>s+x.count,0)} violations</span></div><div class="panel-body">${body}</div></div>`;
+  }).join('');
+  if(!S.some(([k])=>(res[k]||[]).length)) document.getElementById('fastResults').insertAdjacentHTML('beforeend','<div class="err" style="margin-top:8px">مفيش مخالفات في الفترة دي بالفلاتر الحالية (Shift: '+(fastF.shift||'All')+' · Who: '+(fastF.role||'All')+' · Modality: '+(fastF.mod||'All')+' · Pass: '+fastF.pass+'). جرّب Pass: All أو Shift: All.</div>');
+}
+
+// ============================================================
+//  TEAMS SUBMISSION — شاشة جاهزة للسكرين شوت
+// ============================================================
+const SPECIAL=['QTC','SV','SL'];
+let teamsSt={shift:null,mod:'',pass:''}, teamsReq=0, teamsRes=null;
+function extractPc(v){ if(!v) return null; const s=String(v).trim(); for(const p of s.split('-')){ if(/^\d+$/.test(p.trim())) return p.trim(); } const m=s.match(/\b\d+\b/); return m?m[0]:null; }
+function roomKey(v){ const s=String(v||'').toLowerCase(); if(s.includes('108')) return 'room108'; if(s.includes('106')) return 'room106'; if(s.includes('102')) return 'room102'; if(s.includes('4th')||s.includes('fourth')||/floor\s*4/.test(s)) return 'floor4'; return ''; }
+function specialLabel(v){ const s=String(v||'').replace(/\s+/g,' ').trim().toUpperCase(); if(!s) return null; if(SPECIAL.some(t=>new RegExp('(^|[^A-Z])'+t+'([^A-Z]|$)').test(s))) return s; return /\d/.test(s)?null:s; }
+const shiftOrEmpty=v=>{ const s=normShift(v); return s==='—'?'':s; };
+const TEAMS_ROWS=[
+  ['shift','⏱ Shift:',[['ON','ON'],['M','M'],['N','N']]],
+  ['mod','🔬 Modality:',[['','All'],['Lidar','Lidar'],['Lane','Lane Line']]],
+  ['pass','✅ Pass:',[['','All'],['FP','FP'],['QA','QA']]]
+];
+function renderTeamsForm(){
+  const el=document.getElementById('view-teams'), n=new Date(), today=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());
+  if(!teamsSt.shift){ const h=n.getHours(); teamsSt.shift=h<8?'ON':(h<16?'M':'N'); }
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>📋 Teams Submission</h3></div><div class="panel-body">
+    <div class="filters"><label>Date:</label><span class="dp" id="teamsDate"></span></div>
+    <div id="teamsFilters">${TEAMS_ROWS.map(([k,l,o])=>`<div class="filters"><label>${l}</label>${o.map(([v,t])=>`<button class="pill ${teamsSt[k]===v?'on':''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`).join('')}</div>
+    </div></div><div id="teamsResults"></div>`;
+  dpInit('teamsDate',false,n);
+  document.getElementById('teamsDate').onchange=runTeamsSubmission;
+  document.getElementById('teamsFilters').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return;
+    teamsSt[b.dataset.k]=b.dataset.v; b.parentNode.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===b));
+    if(b.dataset.k==='shift') runTeamsSubmission(); else renderTeamsResults(); };
+  runTeamsSubmission();
+}
+function runTeamsSubmission(){
+  const date=document.getElementById('teamsDate').value; if(!date) return;
+  const my=++teamsReq, box=document.getElementById('teamsResults'); box.innerHTML=LOADING;
+  Promise.all([getSheet(CFG.TEAMS),getSheet(CFG.DB)]).then(([tm,db])=>{
+    if(my!==teamsReq) return; teamsRes=computeTeams(tm,db,date,teamsSt.shift); renderTeamsResults();
+  }).catch(e=>{ if(my!==teamsReq) return; box.innerHTML=errBox(e.message,'runTeamsSubmission'); });
+}
+// بيجمّع كل سبمت كـ record، والفلاتر (Modality/Pass) بتتطبق عليها قبل أي جدول
+function computeTeams(tm,db,date,shiftCode){
+  const tc=cmap(tm.headers), iP=ci(tc,['pc no.','pc no']), iL=ci(tc,['location']), iQ=ci(tc,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(tc,['shift']);
+  const owners={}, order=[], pcs=[], emailMap={}; let cur=null; const iEm=ci(tc,['labeler yubikey','yubikey','yubikey email']);
+  tm.rows.forEach(r=>{
+    const raw=String(gc(r,iQ)||'').trim();
+    if(raw){ const key=normName(raw); if(key){ cur=key; if(!owners[key]){ owners[key]={raw,shift:shiftFromName(raw)||shiftOrEmpty(gc(r,iS))}; order.push(key); } } }
+    const pc=extractPc(gc(r,iP)); if(pc&&cur) pcs.push({key:cur,pc,room:roomKey(gc(r,iL))});
+    const em=String(gc(r,iEm)||'').trim().toLowerCase(); if(em.includes('@')&&cur) emailMap[em]=cur;
+  });
+  let keys=order.filter(k=>owners[k].shift===shiftCode); if(!keys.length) keys=order.slice();
+  const allowed={}; keys.forEach(k=>allowed[k]=true);
+  const pcMap={}; pcs.forEach(p=>{ if(!allowed[p.key]) return; if(p.room) pcMap[p.room+'_'+p.pc]=p.key; pcMap[p.pc]=p.key; });
+  const d=cmap(db.headers), iTs=ci(d,['timestamp']); let iRoom=ci(d,['unit']); if(iRoom<0) iRoom=ci(d,['queue name']);
+  const iEmD=ci(d,['yubikey email']);
+  const iQtc=ci(d,['qtc name']); if(iQtc<0) throw new Error('Column "QTC Name" not found in Data Base. Columns: '+db.headers.join(' | '));
+  const iPc=ci(d,['pc no']), iMod=ci(d,['modality']), iPass=ci(d,['pass']);
+  const recs=[], avail={};
+  db.rows.forEach(row=>{
+    const t=parseTS(gc(row,iTs)); if(!t) return;
+    const rawRoom=gc(row,iRoom), cls=shiftOf(rawRoom,t);
+    if(cls){ const a=avail[cls.date]=avail[cls.date]||{ON:0,M:0,N:0}; a[cls.shift]++; }
+    if(!cls||cls.shift!==shiftCode||cls.date!==date) return;
+    const sub=String(gc(row,iQtc)||'').trim(), rawPc=gc(row,iPc);
+    const rec={ qc:cleanName(sub), mod:/LANE|LINE/i.test(String(gc(row,iMod)||''))?'Lane':'Lidar', pass:isQAPass(gc(row,iPass))?'QA':'FP', team:null, label:null };
+    if(String(rawPc).toUpperCase().includes('BUFFER')||sub.toUpperCase().includes('BUFFER')) rec.label='Buffer';
+    else { const sp=specialLabel(rawPc);
+      if(sp) rec.label=sp;
+      else { const pc=extractPc(rawPc);
+        if(!pc) rec.label='No PC';
+        else { const ok=pcMap[(roomKey(rawRoom)||'')+'_'+pc]||pcMap[pc]; if(ok) rec.team=ok; else rec.label='Unmatched PC'; } } }
+    if(!rec.team&&(rec.label==='No PC'||rec.label==='Unmatched PC')){ const k=emailMap[String(gc(row,iEmD)||'').trim().toLowerCase()]; if(k&&allowed[k]){ rec.team=k; rec.label=null; } }
+    recs.push(rec);
+  });
+  const samples=db.rows.slice(-3).map(r=>{ const t=parseTS(gc(r,iTs)); return String(gc(r,iTs))+' → '+(t?t.date+' / '+t.mins+' min':'غير مقروء'); });
+  return { recs, keys, owners, avail, samples, nRows:db.rows.length, tsCol:iTs, shift:shiftCode, date };
+}
+function cntStr(m){ return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,n])=>k+' ('+n+')').join('، ')||'-'; }
+function renderTeamsResults(){
+  const res=teamsRes; if(!res) return;
+  const recs=res.recs.filter(r=>(!teamsSt.mod||r.mod===teamsSt.mod)&&(!teamsSt.pass||r.pass===teamsSt.pass));
+  const sub=[res.shift+' · '+res.date, teamsSt.mod||'Lidar+Lane', teamsSt.pass||'FP+QA'].join(' · ');
+  const T=[];
+  res.keys.forEach(k=>{ const a=recs.filter(r=>r.team===k); if(!a.length) return;
+    const own=a.filter(r=>samePerson(normName(r.qc),k)).length, ext={};
+    a.forEach(r=>{ if(r.qc&&!samePerson(normName(r.qc),k)) ext[r.qc]=(ext[r.qc]||0)+1; });
+    T.push({qtc:res.owners[k].raw,total:a.length,own,ext:a.length-own,names:cntStr(ext),kind:'qc'}); });
+  const labels=[...new Set(recs.filter(r=>r.label).map(r=>r.label))];
+  const pri=['Buffer',...SPECIAL], rest=labels.filter(l=>!pri.includes(l)&&!['No PC','Unmatched PC'].includes(l)).sort();
+  [...pri,...rest,'No PC','Unmatched PC'].forEach(l=>{ const a=recs.filter(r=>r.label===l); if(!a.length) return; const nm={};
+    a.forEach(r=>{ if(r.qc&&!/buffer/i.test(r.qc)) nm[r.qc]=(nm[r.qc]||0)+1; });
+    T.push({qtc:l,total:a.length,own:'-',ext:'-',names:cntStr(nm),kind:'special'}); });
+  const num=(a,k)=>a.reduce((s,r)=>s+(Number(r[k])||0),0);
+  const m={};
+  recs.forEach(r=>{ const n=r.qc||'(no name)';
+    const o=m[n]=m[n]||{name:n,own:0,other:0,special:0,fpLidar:0,qaLidar:0,fpLane:0,qaLane:0,total:0};
+    if(r.team){ samePerson(normName(r.qc),r.team)?o.own++:o.other++; } else o.special++;
+    o[(r.pass==='QA'?'qa':'fp')+r.mod]++; o.total++; });
+  const I=Object.values(m).sort((a,b)=>b.total-a.total);
+  const days=Object.keys(res.avail||{}).sort().reverse().slice(0,7).map(d=>d+' (ON '+res.avail[d].ON+' · M '+res.avail[d].M+' · N '+res.avail[d].N+')').join('  |  ');
+  const hint=res.recs.length?'':`<div class="err" style="margin-bottom:12px">⚠️ مفيش أي تاسكات لـ ${esc(res.date)} شيفت ${esc(res.shift)} في Data Base.<br>الأيام الموجودة (آخر 7): ${esc(days||'مفيش بيانات')}<br>عدد صفوف Data Base: ${res.nRows} · عمود Timestamp رقم: ${res.tsCol}<br>آخر 3 timestamps: ${esc((res.samples||[]).join('  ||  '))}</div>`;
+  document.getElementById('teamsResults').innerHTML=hint+`
+    <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(sub)}</h3></div><div class="panel-body"><div class="table-wrap shot"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
+    <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td class="wrap">${esc(r.names)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
+    ${T.length?`<tr class="total"><td>TOTAL</td><td>${num(T,'total')}</td><td>${num(T,'own')}</td><td>${num(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div></div></div>
+    <div class="panel"><div class="panel-head"><h3>👤 Every QC — Total Submits — ${esc(sub)}</h3></div><div class="panel-body"><div class="table-wrap shot"><table><thead><tr><th>QC</th><th>Own Team</th><th>Other Teams</th><th>SV / QTC / SL / Buffer…</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
+    <tbody>${I.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.own}</td><td>${r.other}</td><td>${r.special}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLane}</td><td>${r.qaLane}</td><td><b>${r.total}</b></td></tr>`).join('')||'<tr><td colspan="9">No data</td></tr>'}
+    ${I.length?`<tr class="total"><td>TOTAL</td><td>${num(I,'own')}</td><td>${num(I,'other')}</td><td>${num(I,'special')}</td><td>${num(I,'fpLidar')}</td><td>${num(I,'qaLidar')}</td><td>${num(I,'fpLane')}</td><td>${num(I,'qaLane')}</td><td>${num(I,'total')}</td></tr>`:''}</tbody></table></div></div></div>`;
+}
+
+// ============================================================
+//  ACCESS GATE
+// ============================================================
+function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
+function bootApp(u){
+  CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
+  document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
+  document.getElementById('gate').classList.add('hide'); loadTab('live');
+  const w=document.createElement('div'); w.className='welcome';
+  w.textContent='👋 مرحباً '+u.name+(u.position?' — '+u.position:'');
+  document.body.appendChild(w); setTimeout(()=>w.remove(),4600);
+}
+function tryEmail(email){
+  gateMsg('Checking…'); CURRENT_EMAIL=email; initData();
+  const g=document.getElementById('gate'); g.classList.add('busy');
+  callApi('checkemail',{email}).then(u=>{ g.classList.remove('busy'); if(u&&u.ok) bootApp(u); else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
+}
+function submitGateEmail(){ const e=document.getElementById('gateEmail').value.trim().toLowerCase(); if(!e){ gateMsg('⚠️ Please enter an email'); return; } tryEmail(e); }
+document.getElementById('gateEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') submitGateEmail(); });
+let whoSeq=0;
+const lookupWho=debounce(()=>{
+  const em=document.getElementById('gateEmail').value.trim().toLowerCase(), box=document.getElementById('gateWho'), my=++whoSeq;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ box.innerHTML=''; return; }
+  callApi('checkemail',{email:em}).then(u=>{ if(my!==whoSeq) return;
+    box.innerHTML=(u&&u.ok)?'<div class="who">👤 '+esc(u.name)+(u.position?' — <span>'+esc(u.position)+'</span>':'')+'</div>':''; }).catch(()=>{ if(my===whoSeq) box.innerHTML=''; });
+},500);
+document.getElementById('gateEmail').addEventListener('input',()=>{ document.getElementById('gateWho').innerHTML=''; lookupWho(); });
+if(API_URL.indexOf('PASTE_YOUR')===0) gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
+else if(CURRENT_EMAIL){
+  initData();
+  let cu=null; try{ cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); }catch(e){}
+  if(cu&&cu.ok&&cu.email===CURRENT_EMAIL){
+    bootApp(cu);   // يفتح فوراً من الكاش، والفحص بيتم في الخلفية
+    callApi('checkemail',{email:CURRENT_EMAIL}).then(u=>{
+      if(!(u&&u.ok)){ try{localStorage.removeItem('meeg_user');}catch(e){} document.getElementById('gate').classList.remove('hide'); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
+    }).catch(()=>{});
+  } else { document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
+}
+</script>
+</body>
+</html>

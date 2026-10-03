@@ -956,9 +956,9 @@ function renderTeamsResults(){
 //  ANALYSIS — تحليل التاسكات + Rate + Issue + الشباب
 // ============================================================
 const RATES=['Excellent','Good','Average','Poor'];
-const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc'}};
+const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc',shift:''}};
 function anBuild(db){
-  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),p:ci(c,['pass']),lk:ci(c,['task link']),id:ci(c,['task id'])}, m={};
+  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),u:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),p:ci(c,['pass']),lk:ci(c,['task link']),id:ci(c,['task id'])}, m={};
   db.rows.forEach(r=>{
     const id=normId(gc(r,I.id)); if(!id) return;
     const t=parseTS(gc(r,I.ts)), qa=isQAPass(gc(r,I.p)), x=m[id]=m[id]||{id,passes:{},ms:0,ts:'',date:''};
@@ -967,7 +967,7 @@ function anBuild(db){
     if(!qa||!x.lab) x.lab=lab||x.lab||''; if(qa||!x.qc) x.qc=qc||x.qc||'';
     x.link=String(gc(r,I.lk)||'').trim()||x.link||''; x.queue=String(gc(r,I.q)||'').trim()||x.queue||'';
     x.mod=/LANE|LINE/i.test(String(gc(r,I.mod)||''))?'Lane Line':'Lidar';
-    if(t&&t.ms>=x.ms){ x.ms=+t.ms; x.ts=t.str; x.date=t.date; }
+    if(t&&t.ms>=x.ms){ x.ms=+t.ms; x.ts=t.str; x.date=t.date; const sh=shiftOf(gc(r,I.u),t); x.sh=sh?sh.shift:''; }
   });
   return Object.values(m).sort((a,b)=>b.ms-a.ms);
 }
@@ -992,7 +992,7 @@ function anShell(){
     ${v==='tasks'?`<div class="filters"><select id="anQueue"><option value="">📁 All Queues</option>${opt('queue')}</select><select id="anLab"><option value="">👤 All Labelers</option>${opt('lab')}</select><select id="anQc"><option value="">🔖 All QC</option>${opt('qc')}</select>
       <input id="anQ" placeholder="🔎 Task id / name…" value="${esc(f.q)}"></div>
       <div class="filters" id="anPills"><label>Pass:</label>${pills('pass',[['','All'],['FP','FP'],['QA','QA']])}<label>Type:</label>${pills('mod',[['','All'],['Lidar','Lidar'],['Lane Line','Lane Line']])}<label>Status:</label>${pills('status',[['','All'],['todo','Not analyzed'],['done','Analyzed'],['issue','Has issue']])}</div>`:''}
-    ${v==='ratings'?`<div class="filters" id="anPills"><label>Group by:</label>${pills('subj',[['qc','🔖 QC'],['lab','👤 Labeler']])}</div>`:''}
+    ${v==='ratings'?`<div class="filters" id="anPills"><label>Group by:</label>${pills('subj',[['qc','🔖 QC'],['lab','👤 Labeler']])}<label>Shift:</label>${pills('shift',[['','All'],['M','M'],['N','N'],['ON','ON']])}</div>`:''}
   </div></div><div id="anBody"></div>`;
   document.getElementById('anViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; AN.view=b.dataset.view; AN.lim=100; anShell(); };
   const d0=x=>new Date((x||AN.dmax||fmtDT(new Date()).substring(0,10))+'T00:00:00');
@@ -1009,7 +1009,7 @@ function anBody(){
   const b=document.getElementById('anBody'), f=AN.f;
   if(AN.view==='tasks') return anTasks(b);
   const L=Object.values(AN.log).filter(e=>(!f.from||e.date>=f.from)&&(!f.to||e.date<=f.to));
-  AN.view==='ratings'?anRatings(b,L):AN.view==='issues'?anIssues(b,L):anTeam(b,L);
+  AN.view==='ratings'?anRatings(b,f.shift?L.filter(e=>{ const t=AN.byId[e.id]; return t&&t.sh===f.shift; }):L):AN.view==='issues'?anIssues(b,L):anTeam(b,L);
 }
 function anFiltered(){
   const f=AN.f, q=f.q.trim().toLowerCase();

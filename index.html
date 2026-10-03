@@ -132,6 +132,7 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .bio-btn:after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--acc);opacity:0;animation:bioP 2s ease-out infinite}
 @keyframes bioP{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.25);opacity:0}}
 .bio-t{font-weight:700;font-size:14px}.bio-n{color:var(--ink-soft);font-size:12px;margin:4px 0 10px}.bio-l{font-size:12px;color:var(--ink-soft)}
+.an-r{white-space:nowrap}.an-r .pill{padding:3px 8px;font-size:10.5px}.an-t td select,.an-t td input{padding:4px 6px;border-radius:8px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:11.5px}.an-m{font-size:10.5px;color:var(--good)}
 .shot{max-height:none!important;overflow:visible}
 .shot td.wrap{white-space:normal;max-width:380px}
 </style>
@@ -167,6 +168,7 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 <div class="tabs" id="tabs">
   <button class="tab active" data-tab="live">📊 Live</button>
   <button class="tab" data-tab="qc">🎯 QC Quality</button>
+  <button class="tab" data-tab="analysis">🧪 Analysis</button>
   <button class="tab" data-tab="teamsq">👥 Teams Quality</button>
   <button class="tab" data-tab="fast">⚡ Fast Submits</button>
   <button class="tab" data-tab="teams">📋 Teams Submission</button>
@@ -174,6 +176,7 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 <div class="wrap">
   <div id="view-live" class="view"></div>
   <div id="view-qc" class="view" style="display:none"></div>
+  <div id="view-analysis" class="view" style="display:none"></div>
   <div id="view-teamsq" class="view" style="display:none"></div>
   <div id="view-fast" class="view" style="display:none"></div>
   <div id="view-teams" class="view" style="display:none"></div>
@@ -409,7 +412,7 @@ document.getElementById('tabs').addEventListener('click', e=>{
 const loaded={};
 function loadTab(tab){
   if(loaded[tab]) return; loaded[tab]=true;
-  if(tab==='live') loadLive(); if(tab==='qc') loadQC(); if(tab==='teamsq') loadTeamsQ();
+  if(tab==='live') loadLive(); if(tab==='qc') loadQC(); if(tab==='analysis') loadAnalysis(); if(tab==='teamsq') loadTeamsQ();
   if(tab==='fast') renderFastForm(); if(tab==='teams') renderTeamsForm();
 }
 function refreshAll(){ BUNDLE=null; STALE=false; Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
@@ -948,6 +951,123 @@ function renderTeamsResults(){
 // ============================================================
 //  ACCESS GATE
 // ============================================================
+
+// ============================================================
+//  ANALYSIS — تحليل التاسكات + Rate + Issue + الشباب
+// ============================================================
+const RATES=['Excellent','Good','Average','Poor'];
+const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc'}};
+function anBuild(db){
+  const c=cmap(db.headers), I={ts:ci(c,['timestamp']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),p:ci(c,['pass']),lk:ci(c,['task link']),id:ci(c,['task id'])}, m={};
+  db.rows.forEach(r=>{
+    const id=normId(gc(r,I.id)); if(!id) return;
+    const t=parseTS(gc(r,I.ts)), qa=isQAPass(gc(r,I.p)), x=m[id]=m[id]||{id,passes:{},ms:0,ts:'',date:''};
+    x.passes[qa?'QA':'FP']=1;
+    const lab=String(gc(r,I.lab)||'').trim(), qc=cleanName(gc(r,I.qc));
+    if(!qa||!x.lab) x.lab=lab||x.lab||''; if(qa||!x.qc) x.qc=qc||x.qc||'';
+    x.link=String(gc(r,I.lk)||'').trim()||x.link||''; x.queue=String(gc(r,I.q)||'').trim()||x.queue||'';
+    x.mod=/LANE|LINE/i.test(String(gc(r,I.mod)||''))?'Lane Line':'Lidar';
+    if(t&&t.ms>=x.ms){ x.ms=+t.ms; x.ts=t.str; x.date=t.date; }
+  });
+  return Object.values(m).sort((a,b)=>b.ms-a.ms);
+}
+function loadAnalysis(){
+  const el=document.getElementById('view-analysis'); el.innerHTML=LOADING;
+  Promise.all([getSheet(CFG.DB),callApi('sheet',{name:'Analysis Log'}).catch(()=>({headers:[],rows:[]})),callApi('analysts').catch(()=>({names:[]}))]).then(([db,lg,an])=>{
+    AN.tasks=anBuild(db); AN.byId={}; AN.tasks.forEach(t=>AN.byId[t.id]=t); AN.log={};
+    const c=cmap(lg.headers||[]), g=(r,n)=>String(gc(r,ci(c,[n]))||'');
+    (lg.rows||[]).forEach(r=>{ const id=normId(g(r,'task id')); if(!id) return; const at=g(r,'analyzed at');
+      AN.log[id]={id,at,date:at.substring(0,10),analyst:g(r,'analyst'),rating:g(r,'rating'),issue:g(r,'issue'),lab:g(r,'labeler'),qc:g(r,'qc'),mod:g(r,'modality'),queue:g(r,'queue'),pass:g(r,'pass')}; });
+    AN.names=(an.names||[]).slice(); const me=window.ME&&window.ME.name; if(me&&!AN.names.includes(me)) AN.names.unshift(me);
+    AN.dmax=AN.tasks.length?AN.tasks[0].date:''; AN.f.from=AN.f.to=AN.dmax; anShell();
+  }).catch(e=>{ el.innerHTML=errBox(e.message,'loadAnalysis'); });
+}
+function anShell(){
+  const el=document.getElementById('view-analysis'), f=AN.f, v=AN.view;
+  const opt=k=>[...new Set(AN.tasks.map(t=>t[k]).filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  const pills=(k,a)=>a.map(([x,t])=>`<button class="pill ${f[k]===x?'on':''}" data-k="${k}" data-v="${x}">${t}</button>`).join('');
+  el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🧪 Analysis</h3><span id="anCount"></span></div><div class="panel-body">
+    <div class="filters" id="anViews">${[['tasks','📝 Tasks'],['ratings','⭐ Ratings'],['team','👥 Analysts'],['issues','⚠️ Issues']].map(([k,t])=>`<button class="pill ${v===k?'on':''}" data-view="${k}">${t}</button>`).join('')}</div>
+    <div class="filters"><label>${v==='tasks'?'Task date':'Analysis date'}:</label><span class="dp" id="anFrom"></span><label>→</label><span class="dp" id="anTo"></span><button class="pill" id="anAll">All dates</button></div>
+    ${v==='tasks'?`<div class="filters"><select id="anQueue"><option value="">📁 All Queues</option>${opt('queue')}</select><select id="anLab"><option value="">👤 All Labelers</option>${opt('lab')}</select><select id="anQc"><option value="">🔖 All QC</option>${opt('qc')}</select>
+      <input id="anQ" placeholder="🔎 Task id / name…" value="${esc(f.q)}"></div>
+      <div class="filters" id="anPills"><label>Pass:</label>${pills('pass',[['','All'],['FP','FP'],['QA','QA']])}<label>Type:</label>${pills('mod',[['','All'],['Lidar','Lidar'],['Lane Line','Lane Line']])}<label>Status:</label>${pills('status',[['','All'],['todo','Not analyzed'],['done','Analyzed'],['issue','Has issue']])}</div>`:''}
+    ${v==='ratings'?`<div class="filters" id="anPills"><label>Group by:</label>${pills('subj',[['qc','🔖 QC'],['lab','👤 Labeler']])}</div>`:''}
+  </div></div><div id="anBody"></div>`;
+  document.getElementById('anViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; AN.view=b.dataset.view; AN.lim=100; anShell(); };
+  const d0=x=>new Date((x||AN.dmax||fmtDT(new Date()).substring(0,10))+'T00:00:00');
+  dpInit('anFrom',false,d0(f.from)); dpInit('anTo',false,d0(f.to));
+  document.getElementById('anFrom').onchange=()=>{ f.from=document.getElementById('anFrom').value; AN.lim=100; anBody(); };
+  document.getElementById('anTo').onchange=()=>{ f.to=document.getElementById('anTo').value; AN.lim=100; anBody(); };
+  document.getElementById('anAll').onclick=()=>{ f.from=f.to=''; anBody(); };
+  [['anQueue','queue'],['anLab','lab'],['anQc','qc']].forEach(([id,k])=>{ const x=document.getElementById(id); if(!x) return; x.value=f[k]; x.onchange=()=>{ f[k]=x.value; AN.lim=100; anBody(); }; makeSearchable(x); });
+  const q=document.getElementById('anQ'); if(q) q.oninput=debounce(()=>{ f.q=q.value; AN.lim=100; anBody(); },250);
+  const pb=document.getElementById('anPills'); if(pb) pb.onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; f[b.dataset.k]=b.dataset.v; pb.querySelectorAll('.pill[data-k="'+b.dataset.k+'"]').forEach(p=>p.classList.toggle('on',p===b)); AN.lim=100; anBody(); };
+  anBody();
+}
+function anBody(){
+  const b=document.getElementById('anBody'), f=AN.f;
+  if(AN.view==='tasks') return anTasks(b);
+  const L=Object.values(AN.log).filter(e=>(!f.from||e.date>=f.from)&&(!f.to||e.date<=f.to));
+  AN.view==='ratings'?anRatings(b,L):AN.view==='issues'?anIssues(b,L):anTeam(b,L);
+}
+function anFiltered(){
+  const f=AN.f, q=f.q.trim().toLowerCase();
+  return AN.tasks.filter(t=>{ const l=AN.log[t.id];
+    if(f.queue&&t.queue!==f.queue||f.lab&&t.lab!==f.lab||f.qc&&t.qc!==f.qc||f.pass&&!t.passes[f.pass]||f.mod&&t.mod!==f.mod) return false;
+    if(f.from&&t.date<f.from||f.to&&t.date>f.to) return false;
+    if(f.status==='todo'&&l||f.status==='done'&&!l||f.status==='issue'&&!(l&&l.issue)) return false;
+    return !q||(t.id+' '+t.lab+' '+t.qc+' '+t.queue).toLowerCase().includes(q); });
+}
+function anTasks(b){
+  const rows=anFiltered(), show=rows.slice(0,AN.lim);
+  document.getElementById('anCount').textContent=rows.length+' tasks';
+  let def=''; try{ def=localStorage.getItem('meeg_analyst')||''; }catch(e){} if(!def&&window.ME) def=window.ME.name;
+  const row=t=>{ const l=AN.log[t.id], sel=(l&&l.analyst)||def;
+    const names=AN.names.includes(sel)||!sel?AN.names:[sel,...AN.names];
+    return `<tr data-id="${esc(t.id)}"><td>${/^https?:\/\//.test(t.link)?`<a class="lnk" href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.id)} ↗</a>`:esc(t.id)}</td><td>${esc(t.ts)}</td><td>${esc(t.queue)}</td><td>${esc(t.lab)}</td><td>${esc(t.qc)}</td><td>${esc(t.mod)} · ${Object.keys(t.passes).join('+')}</td>
+    <td><select class="an-a"><option value="">— Analyst —</option>${names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('')}</select></td>
+    <td class="an-r">${RATES.map(r=>`<button class="pill ${l&&l.rating===r?'on':''}" data-r="${r}">${r}</button>`).join('')}</td>
+    <td><input class="an-i" value="${esc(l?l.issue:'')}" placeholder="Issue…" style="width:210px"></td>
+    <td><button class="btn dark an-s">Save</button> <span class="an-m">${l?'✓ '+esc(l.at.substring(5,16)):''}</span></td></tr>`; };
+  b.innerHTML=`<div class="panel"><div class="panel-body"><div class="table-wrap"><table class="an-t"><thead><tr><th>Task</th><th>Time</th><th>Queue</th><th>Labeler</th><th>QC</th><th>Type</th><th>Analyst</th><th>Rate (Labeler + QC)</th><th>Issue</th><th></th></tr></thead><tbody>${show.map(row).join('')||'<tr><td colspan="10">No tasks</td></tr>'}</tbody></table></div>
+    ${rows.length>show.length?`<div style="text-align:center;margin-top:10px"><button class="btn" id="anMore">Show more (${rows.length-show.length})</button></div>`:''}</div></div>`;
+  const more=document.getElementById('anMore'); if(more) more.onclick=()=>{ AN.lim+=100; anTasks(b); };
+  b.onclick=e=>{ const tr=e.target.closest('tr[data-id]'); if(!tr) return;
+    const p=e.target.closest('.an-r .pill'); if(p){ const was=p.classList.contains('on'); tr.querySelectorAll('.an-r .pill').forEach(x=>x.classList.remove('on')); if(!was) p.classList.add('on'); return; }
+    if(e.target.closest('.an-s')) anSave(tr); };
+}
+function anSave(tr){
+  const id=tr.dataset.id, t=AN.byId[id], m=tr.querySelector('.an-m'), on=tr.querySelector('.an-r .on');
+  const analyst=tr.querySelector('.an-a').value, rating=on?on.dataset.r:'', issue=tr.querySelector('.an-i').value.trim().slice(0,600);
+  const bad=x=>{ m.style.color='var(--bad)'; m.textContent=x; };
+  if(!analyst) return bad('اختار اسم الـ Analyst'); if(!rating&&!issue) return bad('اختار Rate أو اكتب Issue');
+  m.style.color='var(--ink-soft)'; m.textContent='Saving…';
+  callApi('saveanalysis',{task:id,analyst,rating,issue,lab:t.lab,qc:t.qc,mod:t.mod,queue:t.queue,pass:Object.keys(t.passes).join('+'),ttime:t.ts}).then(r=>{
+    AN.log[id]={id,at:r.at,date:r.at.substring(0,10),analyst,rating,issue,lab:t.lab,qc:t.qc,mod:t.mod,queue:t.queue,pass:Object.keys(t.passes).join('+')};
+    try{ localStorage.setItem('meeg_analyst',analyst); }catch(e){} m.style.color='var(--good)'; m.textContent='✓ Saved';
+  }).catch(e=>bad('⚠️ '+e.message));
+}
+function anIssues(b,L){
+  const R=L.filter(e=>e.issue).sort((a,c)=>c.at.localeCompare(a.at));
+  document.getElementById('anCount').textContent=R.length+' issues';
+  b.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>Analyzed at</th><th>Analyst</th><th>Labeler</th><th>QC</th><th>Type</th><th>Rate</th><th>Issue</th></tr></thead><tbody>${R.map(e=>{ const t=AN.byId[e.id], lk=t&&/^https?:\/\//.test(t.link)?t.link:''; return `<tr><td>${lk?`<a class="lnk" href="${esc(lk)}" target="_blank" rel="noopener">${esc(e.id)} ↗</a>`:esc(e.id)}</td><td>${esc(e.at)}</td><td>${esc(e.analyst)}</td><td>${esc(e.lab)}</td><td>${esc(e.qc)}</td><td>${esc(e.mod)}</td><td>${esc(e.rating)||'-'}</td><td style="white-space:normal;min-width:260px">${esc(e.issue)}</td></tr>`; }).join('')||'<tr><td colspan="8">No issues</td></tr>'}</tbody></table></div></div>`;
+}
+function anRatings(b,L){
+  const key=AN.f.subj, R=L.filter(e=>e.rating); document.getElementById('anCount').textContent=R.length+' rated tasks';
+  const W={Excellent:100,Good:75,Average:50,Poor:25}, avg=o=>o.n?((o.Excellent*W.Excellent+o.Good*W.Good+o.Average*W.Average+o.Poor*W.Poor)/o.n).toFixed(1)+'%':'-';
+  const tbl=(title,list)=>{ const m={}; list.forEach(e=>{ const k=e[key]||'—', o=m[k]=m[k]||{Excellent:0,Good:0,Average:0,Poor:0,n:0}; o[e.rating]++; o.n++; });
+    const rows=Object.entries(m).sort((a,c)=>c[1].n-a[1].n), tot={Excellent:0,Good:0,Average:0,Poor:0,n:0}; rows.forEach(([,o])=>{ for(const k in tot) tot[k]+=o[k]; });
+    return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${tot.n} tasks</span></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>${key==='qc'?'QC':'Labeler'}</th>${RATES.map(r=>'<th>'+r+'</th>').join('')}<th>Total</th><th>Avg %</th></tr></thead><tbody>${rows.map(([k,o])=>`<tr><td>${esc(k)}</td>${RATES.map(r=>'<td>'+o[r]+'</td>').join('')}<td><b>${o.n}</b></td><td>${avg(o)}</td></tr>`).join('')||'<tr><td colspan="7">No data</td></tr>'}${rows.length?`<tr class="total"><td>TOTAL</td>${RATES.map(r=>'<td>'+tot[r]+'</td>').join('')}<td>${tot.n}</td><td><b>${avg(tot)}</b></td></tr><tr class="total"><td>% of total</td>${RATES.map(r=>'<td>'+(tot[r]/tot.n*100).toFixed(1)+'%</td>').join('')}<td>100%</td><td></td></tr>`:''}</tbody></table></div></div>`; };
+  b.innerHTML=tbl('Lidar',R.filter(e=>e.mod==='Lidar'))+tbl('Lane Line',R.filter(e=>e.mod==='Lane Line'))+tbl('Lidar + Lane Line',R);
+}
+function anTeam(b,L){
+  document.getElementById('anCount').textContent=L.length+' analyzed';
+  const days=[...new Set(L.map(e=>e.date))].sort().reverse(), names=[...new Set(L.map(e=>e.analyst||'—'))].sort(), c={}, d={};
+  L.forEach(e=>{ const a=e.analyst||'—', o=c[a]=c[a]||{Lidar:0,'Lane Line':0,n:0,iss:0}; if(o[e.mod]!==undefined) o[e.mod]++; o.n++; if(e.issue) o.iss++; (d[e.date+'|'+a]=(d[e.date+'|'+a]||0)+1); });
+  b.innerHTML=`<div class="panel"><div class="panel-head"><h3>👥 Total per analyst</h3><span>${L.length} tasks</span></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>Analyst</th><th>Lidar</th><th>Lane Line</th><th>Issues</th><th>Total</th></tr></thead><tbody>${names.map(a=>{ const o=c[a]; return `<tr><td>${esc(a)}</td><td>${o.Lidar}</td><td>${o['Lane Line']}</td><td>${o.iss}</td><td><b>${o.n}</b></td></tr>`; }).join('')||'<tr><td colspan="5">No data</td></tr>'}</tbody></table></div></div>
+  <div class="panel"><div class="panel-head"><h3>📅 Per day</h3></div><div class="panel-body table-wrap"><table class="tt"><thead><tr><th>Date</th>${names.map(a=>'<th>'+esc(a)+'</th>').join('')}<th>Total</th></tr></thead><tbody>${days.map(x=>`<tr><td>${x}</td>${names.map(a=>'<td>'+(d[x+'|'+a]||0)+'</td>').join('')}<td><b>${names.reduce((s,a)=>s+(d[x+'|'+a]||0),0)}</b></td></tr>`).join('')||'<tr><td colspan="9">No data</td></tr>'}</tbody></table></div></div>`;
+}
 function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
 function showSplash(u){
   const old=document.getElementById('splash'); if(old) old.remove();
@@ -959,7 +1079,7 @@ function showSplash(u){
   const close=()=>{ d.classList.add('out'); setTimeout(()=>d.remove(),600); };
   d.onclick=close; document.body.appendChild(d); setTimeout(close,2400);
 }
-function bootApp(u){
+function bootApp(u){ window.ME=u;
   CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
   document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
   document.getElementById('gate').classList.add('hide'); loadTab('live');

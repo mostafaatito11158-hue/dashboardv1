@@ -113,23 +113,25 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .gate-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px #26305a inset}
 .tk{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .tk>div{min-width:0}.tk span{color:var(--ink-soft);font-size:10.5px}.tk b{display:block;font-family:inherit;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
-#splash{position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 38%,#0a3446 0%,#06202e 45%,#030a12 100%);color:#fff;font-family:'JetBrains Mono',ui-monospace,Consolas,'Courier New',monospace;transition:opacity .5s;cursor:pointer}
+#splash{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--back);background-color:var(--bg);color:var(--ink);transition:opacity .5s;cursor:pointer}
 #splash.out{opacity:0;pointer-events:none}
-#splash svg{width:160px;height:160px;filter:drop-shadow(0 0 22px rgba(0,200,255,.35));animation:spl 3s ease-in-out infinite}
-@keyframes spl{50%{transform:scale(1.04)}}
-#splash .sp-t{font-size:44px;font-weight:800;letter-spacing:14px;margin:6px 0 0 14px;background:linear-gradient(90deg,#22d3ee,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
-#splash .sp-s{font-size:13px;letter-spacing:7px;color:#38bdf8;margin-top:22px}
-#splash .sp-w{display:flex;align-items:center;gap:14px;margin-top:34px;font-size:12px;letter-spacing:8px;color:#7dd3fc}
-#splash .sp-w:before,#splash .sp-w:after{content:'';width:40px;height:1px;background:#0e7490}
-#splash .sp-n{font-size:52px;font-weight:800;letter-spacing:6px;margin-top:14px}
-#splash .sp-p{margin-top:14px;padding:6px 20px;border:1px solid #14b8a6;border-radius:20px;font-size:13px;letter-spacing:5px;color:#5eead4;background:rgba(20,184,166,.12)}
-#splash .sp-bar{width:250px;height:6px;border-radius:6px;background:#12303f;margin-top:46px;overflow:hidden}
-#splash .sp-bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#14b8a6,#3b82f6);animation:spb 2.3s ease-out forwards}
-@keyframes spb{to{width:100%}}
-#splash .sp-d{display:flex;gap:10px;margin-top:30px}
-#splash .sp-d i{width:9px;height:9px;border-radius:50%;background:#0e7490;animation:spd 1.2s infinite}
-#splash .sp-d i:nth-child(2){animation-delay:.2s}#splash .sp-d i:nth-child(3){animation-delay:.4s}
-@keyframes spd{50%{background:#22d3ee;transform:scale(1.3)}}
+#splash .rg{position:relative;width:96px;height:96px;margin:0 auto;display:grid;place-items:center}
+#splash .rg i{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--acc);border-left-color:rgba(103,232,249,.25);animation:spin 1.1s linear infinite}
+#splash .rg i+i{inset:12px;border-top-color:#f472b6;border-left-color:rgba(244,114,182,.25);animation-duration:1.7s;animation-direction:reverse}
+#splash .rg svg{width:34px;height:34px;animation:zap 1s ease-in-out infinite}
+#splash .rg path{fill:var(--acc)}
+#splash .nb{margin-top:18px;font-size:44px;font-weight:700;letter-spacing:6px;display:flex;justify-content:center;flex-wrap:wrap}
+#splash .nb span{opacity:0;display:inline-block;white-space:pre;animation:spl-lt .4s ease-out forwards;animation-delay:calc(.35s + var(--i)*.1s)}
+#splash .pb{margin-top:8px;font-size:14px;letter-spacing:5px;font-weight:700;color:var(--acc);opacity:0;animation:spl-lt .5s ease-out 1.1s forwards}
+@keyframes spl-lt{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#gateBio,#gateEnr{display:none;text-align:center}
+#gate.bio #gateBio,#gate.enr #gateEnr{display:block}
+#gate.bio #gateEmail,#gate.bio #gateBtn,#gate.bio #gateP,#gate.bio #gateWho,#gate.enr #gateEmail,#gate.enr #gateBtn,#gate.enr #gateP,#gate.enr #gateWho{display:none}
+.bio-btn{position:relative;width:92px;height:92px;margin:6px auto 12px;border-radius:50%;border:2px solid var(--acc);background:var(--chip);color:var(--acc);display:grid;place-items:center;cursor:pointer}
+.bio-btn svg{width:46px;height:46px}
+.bio-btn:after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--acc);opacity:0;animation:bioP 2s ease-out infinite}
+@keyframes bioP{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.25);opacity:0}}
+.bio-t{font-weight:700;font-size:14px}.bio-n{color:var(--ink-soft);font-size:12px;margin:4px 0 10px}.bio-l{font-size:12px;color:var(--ink-soft)}
 .shot{max-height:none!important;overflow:visible}
 .shot td.wrap{white-space:normal;max-width:380px}
 </style>
@@ -138,10 +140,16 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 <div id="gate">
   <div class="panel" style="padding:28px 32px;max-width:420px;width:100%">
     <h2 style="margin:0 0 4px"><span class="logo big"></span> MEEG Productivity</h2>
-    <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px">Enter your email to open the dashboard.</p>
+    <p id="gateP" style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px">Enter your email to open the dashboard.</p>
     <input id="gateEmail" class="gate-input" type="email" placeholder="you@company.com" autocomplete="off">
-    <button class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
+    <button id="gateBtn" class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
     <div id="gateWho"></div>
+    <div id="gateBio"><button type="button" class="bio-btn" onclick="bioLogin()" aria-label="Unlock with face or fingerprint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"/><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"/><path d="M12 11v2a14 14 0 0 0 2.5 8"/><path d="M8 15a18 18 0 0 0 1.8 6"/><path d="M4.9 19a22 22 0 0 1-.9-7v-1a8 8 0 0 1 12-6.95"/></svg></button>
+      <div class="bio-t">Unlock with face or fingerprint</div><div class="bio-n" id="bioWho"></div>
+      <div class="bio-l"><a class="lnk" href="#" onclick="useEmail();return false">Use email instead</a> · <a class="lnk" href="#" onclick="forgetDevice();return false">Forget this device</a></div></div>
+    <div id="gateEnr"><div class="bio-btn" style="cursor:default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"/><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"/><path d="M12 11v2a14 14 0 0 0 2.5 8"/><path d="M8 15a18 18 0 0 0 1.8 6"/><path d="M4.9 19a22 22 0 0 1-.9-7v-1a8 8 0 0 1 12-6.95"/></svg></div>
+      <div class="bio-t">Use face or fingerprint next time?</div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn dark" style="flex:1;justify-content:center" onclick="enrollNow()">Enable</button><button class="btn" style="flex:1;justify-content:center" onclick="enrollSkip()">Not now</button></div></div>
     <div class="ld gate-ld"><i></i><i></i><b>⚡</b></div>
     <div id="gateMsg" style="white-space:pre-wrap;margin-top:10px;color:var(--ink-soft);font-size:12.5px"></div>
   </div>
@@ -151,6 +159,7 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
   <div><h1><span class="logo"></span> MEEG Productivity</h1><div class="meta">Unified Dashboard — <span id="updTime">—</span></div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="userChip" class="chip-user"></span>
+    <button class="btn" id="lockBtn" style="display:none" onclick="location.reload()">🔒 Lock</button>
     <button class="btn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
     <button class="btn dark" onclick="refreshAll()">🔄 Refresh</button>
   </div>
@@ -943,23 +952,69 @@ function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
 function showSplash(u){
   const old=document.getElementById('splash'); if(old) old.remove();
   const d=document.createElement('div'); d.id='splash';
-  d.innerHTML='<svg viewBox="0 0 100 100"><defs><linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><circle cx="50" cy="50" r="48" fill="rgba(14,116,144,.18)" stroke="rgba(34,211,238,.35)"/><polygon points="24,24 64,24 56,39 24,39" fill="url(#spg)"/><polygon points="32,43 72,43 64,58 32,58" fill="url(#spg)"/><polygon points="40,62 80,62 72,77 40,77" fill="url(#spg)"/></svg>'
-   +'<div class="sp-t">MEEG</div><div class="sp-s">METI COMPANY · PRODUCTIVITY</div><div class="sp-w">WELCOME</div>'
-   +'<div class="sp-n">'+esc(u.name)+'</div>'+(u.position?'<div class="sp-p">'+esc(String(u.position).replace(/\./g,'').toUpperCase())+'</div>':'')
-   +'<div class="sp-bar"><i></i></div><div class="sp-d"><i></i><i></i><i></i></div>';
+  const pos=u.position?String(u.position).toUpperCase():'';
+  d.innerHTML='<div><div class="rg"><i></i><i></i><svg viewBox="0 0 64 64"><path d="M36 8L16 36h13l-4 20 23-30H34z"/></svg></div>'
+   +'<div class="nb">'+Array.from(String(u.name||'')).map((c,i)=>'<span style="--i:'+i+'">'+esc(c)+'</span>').join('')+'</div>'
+   +(pos?'<div class="pb">'+esc(pos)+'</div>':'')+'</div>';
   const close=()=>{ d.classList.add('out'); setTimeout(()=>d.remove(),600); };
-  d.onclick=close; document.body.appendChild(d); setTimeout(close,2500);
+  d.onclick=close; document.body.appendChild(d); setTimeout(close,2400);
 }
 function bootApp(u){
   CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
   document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
   document.getElementById('gate').classList.add('hide'); loadTab('live');
-  showSplash(u);
+  showSplash(u); const lk=document.getElementById('lockBtn'); if(lk) lk.style.display=pkGet()?'':'none';
 }
+const PK_KEY='meeg_pk', PK_NO='meeg_pk_no';
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const unb64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+function pkSupported(){ return !!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext); }
+function pkGet(){ try{ return JSON.parse(localStorage.getItem(PK_KEY)||'null'); }catch(e){ return null; } }
+let PENDING_U=null;
+function gateMode(m){ const g=document.getElementById('gate'); g.classList.remove('bio','enr'); if(m) g.classList.add(m); }
+function showBioGate(pk){
+  let nm=''; try{ const cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); if(cu&&cu.email===pk.email) nm=cu.name+(cu.position?' — '+cu.position:''); }catch(e){}
+  document.getElementById('bioWho').textContent=nm||pk.email; gateMode('bio'); gateMsg('');
+}
+function useEmail(){ gateMode(''); gateMsg(''); const i=document.getElementById('gateEmail'); i.value=CURRENT_EMAIL||''; i.focus(); }
+function forgetDevice(){ ['meeg_pk','meeg_user','meeg_email'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); CURRENT_EMAIL=''; useEmail(); }
+async function bioLogin(auto){
+  const pk=pkGet(); if(!pk){ useEmail(); return; }
+  try{
+    await navigator.credentials.get({publicKey:{ challenge:crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials:[{type:'public-key',id:unb64(pk.id),transports:['internal']}], userVerification:'required', timeout:60000 }});
+  }catch(e){ gateMsg(auto===true?'':'⚠️ Biometric check was cancelled. Try again or use email.'); return; }
+  const g=document.getElementById('gate'); g.classList.add('busy'); gateMsg('Checking…'); CURRENT_EMAIL=pk.email;
+  callApi('checkemail',{email:pk.email}).then(u=>{
+    g.classList.remove('busy');
+    if(u&&u.ok){ gateMsg(''); bootApp(u); }
+    else { ['meeg_pk','meeg_user'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); useEmail(); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
+  }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
+}
+// عرض تفعيل البصمة بعد أول دخول بالإيميل (للمسموح لهم فقط)
+function offerBio(u){
+  if(!pkSupported()) return false;
+  const pk=pkGet(); if(pk&&pk.email===u.email) return false;
+  let no=''; try{ no=localStorage.getItem(PK_NO)||''; }catch(e){}
+  if(no===u.email) return false;
+  PENDING_U=u; gateMode('enr'); gateMsg(''); return true;
+}
+async function enrollNow(){
+  const u=PENDING_U; if(!u) return;
+  try{
+    const cred=await navigator.credentials.create({publicKey:{ challenge:crypto.getRandomValues(new Uint8Array(32)), rp:{name:'MEEG Productivity'},
+      user:{id:new TextEncoder().encode(u.email),name:u.email,displayName:u.name||u.email},
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'}, timeout:60000 }});
+    localStorage.setItem(PK_KEY,JSON.stringify({email:u.email,id:b64(cred.rawId)}));
+  }catch(e){ gateMsg('⚠️ Couldn\'t set up biometrics on this device. You can continue with email.'); }
+  gateMode(''); PENDING_U=null; bootApp(u);
+}
+function enrollSkip(){ const u=PENDING_U; if(!u) return; try{ localStorage.setItem(PK_NO,u.email); }catch(e){} gateMode(''); PENDING_U=null; bootApp(u); }
 function tryEmail(email){
   gateMsg('Checking…'); CURRENT_EMAIL=email; initData();
   const g=document.getElementById('gate'); g.classList.add('busy');
-  callApi('checkemail',{email}).then(u=>{ g.classList.remove('busy'); if(u&&u.ok) bootApp(u); else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
+  callApi('checkemail',{email}).then(u=>{ g.classList.remove('busy'); if(u&&u.ok){ if(!offerBio(u)) bootApp(u); } else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
 }
 function submitGateEmail(){ const e=document.getElementById('gateEmail').value.trim().toLowerCase(); if(!e){ gateMsg('⚠️ Please enter an email'); return; } tryEmail(e); }
 document.getElementById('gateEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') submitGateEmail(); });
@@ -974,6 +1029,9 @@ document.getElementById('gateEmail').addEventListener('input',()=>{ document.get
 if(API_URL.indexOf('PASTE_YOUR')===0) gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
 else if(CURRENT_EMAIL){
   initData();
+  const pk0=pkGet();
+  if(pk0&&pk0.email===CURRENT_EMAIL&&pkSupported()){ showBioGate(pk0); setTimeout(()=>bioLogin(true),400); }
+  else {
   let cu=null; try{ cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); }catch(e){}
   if(cu&&cu.ok&&cu.email===CURRENT_EMAIL){
     bootApp(cu);   // يفتح فوراً من الكاش، والفحص بيتم في الخلفية
@@ -981,6 +1039,7 @@ else if(CURRENT_EMAIL){
       if(!(u&&u.ok)){ try{localStorage.removeItem('meeg_user');}catch(e){} document.getElementById('gate').classList.remove('hide'); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
     }).catch(()=>{});
   } else { document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
+  }
 }
 </script>
 </body>

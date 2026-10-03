@@ -111,8 +111,25 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .gate-input::placeholder{color:var(--ink-soft)}
 .gate-input:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(103,232,249,.22)}
 .gate-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px #26305a inset}
-.welcome{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:3000;padding:12px 22px;border-radius:16px;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:wel 4.5s ease forwards;pointer-events:none}
-@keyframes wel{0%{opacity:0;transform:translate(-50%,-14px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-14px)}}
+.tk{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.tk>div{min-width:0}.tk span{color:var(--ink-soft);font-size:10.5px}.tk b{display:block;font-family:inherit;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+#splash{position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 38%,#0a3446 0%,#06202e 45%,#030a12 100%);color:#fff;font-family:'JetBrains Mono',ui-monospace,Consolas,'Courier New',monospace;transition:opacity .5s;cursor:pointer}
+#splash.out{opacity:0;pointer-events:none}
+#splash svg{width:160px;height:160px;filter:drop-shadow(0 0 22px rgba(0,200,255,.35));animation:spl 3s ease-in-out infinite}
+@keyframes spl{50%{transform:scale(1.04)}}
+#splash .sp-t{font-size:44px;font-weight:800;letter-spacing:14px;margin:6px 0 0 14px;background:linear-gradient(90deg,#22d3ee,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
+#splash .sp-s{font-size:13px;letter-spacing:7px;color:#38bdf8;margin-top:22px}
+#splash .sp-w{display:flex;align-items:center;gap:14px;margin-top:34px;font-size:12px;letter-spacing:8px;color:#7dd3fc}
+#splash .sp-w:before,#splash .sp-w:after{content:'';width:40px;height:1px;background:#0e7490}
+#splash .sp-n{font-size:52px;font-weight:800;letter-spacing:6px;margin-top:14px}
+#splash .sp-p{margin-top:14px;padding:6px 20px;border:1px solid #14b8a6;border-radius:20px;font-size:13px;letter-spacing:5px;color:#5eead4;background:rgba(20,184,166,.12)}
+#splash .sp-bar{width:250px;height:6px;border-radius:6px;background:#12303f;margin-top:46px;overflow:hidden}
+#splash .sp-bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#14b8a6,#3b82f6);animation:spb 2.3s ease-out forwards}
+@keyframes spb{to{width:100%}}
+#splash .sp-d{display:flex;gap:10px;margin-top:30px}
+#splash .sp-d i{width:9px;height:9px;border-radius:50%;background:#0e7490;animation:spd 1.2s infinite}
+#splash .sp-d i:nth-child(2){animation-delay:.2s}#splash .sp-d i:nth-child(3){animation-delay:.4s}
+@keyframes spd{50%{background:#22d3ee;transform:scale(1.3)}}
 .shot{max-height:none!important;overflow:visible}
 .shot td.wrap{white-space:normal;max-width:380px}
 </style>
@@ -186,6 +203,7 @@ const IDB={
   set(k,v){ return this.open().then(db=>new Promise(res=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>res(); })).catch(()=>{}); }
 };
 function applyBundle(r,cached){
+  window.DATA_CACHED=!!cached;
   Object.entries(r.sheets||{}).forEach(([n,v])=>{ if(v&&!v.error) SHEETS[n]=v; });
   const el=document.getElementById('updTime'); if(el) el.textContent=new Date(r._ts||Date.now()).toLocaleString()+(cached?' · cached, updating…':'');
 }
@@ -542,17 +560,16 @@ function taskCardHtml(){
   let qr=null; const qp=SHEETS[CFG.QPT];
   if(qp){ if(!L._qIdx){ L._qm=cmap(qp.headers); const i=ci(L._qm,['actual id']); L._qIdx={}; qp.rows.forEach(r=>{ const k=normId(r[i]).toLowerCase(); if(k) L._qIdx[k]=r; }); } qr=L._qIdx[q]; }
   const qv=n=>qr?fmtPct(toNum(qr[ci(L._qm,[n])])):'-';
-  const kv=(k,v)=>`<div><span style="color:var(--ink-soft);font-size:10.5px">${k}</span><br><b>${esc(v)||'-'}</b></div>`;
+  const kv=(k,v)=>`<div><span>${k}</span><b>${esc(v)||'-'}</b></div>`;
   const cards=hits.map(r=>{
     const link=String(r[L.linkIdx]||''), ok=/^https?:\/\//.test(link);
-    return `<div class="card" style="margin-bottom:8px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+    return `<div class="card" style="margin-bottom:8px"><div class="tk">
       ${kv('🕐 Submitted at',r[L.tsIdx])}${kv('⏱ Shift',r.sh)}${kv('📍 Room',L.locationColIdx>=0?r[L.locationColIdx]:'')}${kv('🖥️ PC',g(r,'pc no'))}
-      ${kv('🔖 QC',g(r,'qtc name'))}${kv('👤 Labeler',g(r,'labeler name'))}${kv('✉️ Email',g(r,'yubikey email'))}${kv('📁 Queue',g(r,'queue name'))}
-      ${kv('🔬 Modality',g(r,'modality'))}${kv('✅ Pass',g(r,'pass'))}${kv('🧱 Stage',g(r,'stage'))}${kv('📦 Objects',g(r,'object count'))}</div>
+      ${kv('🔖 QC',g(r,'qtc name'))}${kv('👤 Labeler',g(r,'labeler name'))}${kv('📁 Queue',g(r,'queue name'))}${kv('✅ Type',g(r,'modality')+' · '+g(r,'pass'))}</div>
       ${ok?`<a class="btn dark" style="margin-top:10px;text-decoration:none" href="${esc(link)}" target="_blank" rel="noopener">🔗 Open Task ↗</a>`:''}</div>`;
   }).join('');
   return `<div class="panel"><div class="panel-head"><h3>🔎 Task ${esc(q)} — ${hits.length} submit${hits.length>1?'s':''}</h3>
-    <span>Quality: Artifacts ${qv('artifacts')} · Attribute ${qv('attribute')} · Total ${qv('total accuracy')}</span></div><div class="panel-body">${cards}</div></div>`;
+    <span>${qr?'Artifacts '+qv('artifacts')+' · Attribute '+qv('attribute')+' · Total '+qv('total accuracy'):''}</span></div><div class="panel-body">${cards}</div></div>`;
 }
 function renderLiveBody_(){
   renderActiveTags();
@@ -642,7 +659,11 @@ function buildQC(qpt, db, teams, empty, qpl){
       else rows.push({...base, qtc:'—', shiftN:'—', labeler:em, source:'Unmatched'});
     }
   });
-  return { rows, weekTag:qplWeek(qpl)||weekKey(minExp), stats:{ qpt:qpt.rows.length, noId:qpt.rows.length-rows.length,
+  const wk=qplWeek(qpl)||weekKey(minExp);
+  let qplTasks=0; { const m=cmap(qpl.headers), iW=ci(m,['week']), iT=ci(m,['tasks']); (qpl.rows||[]).forEach(r=>{ if(weekKey(gc(r,iW))===wk) qplTasks+=Number(toNum(gc(r,iT)))||0; }); }
+  const ad=ci(q,['actual date']); let dMin='',dMax=''; qpt.rows.forEach(r=>{ const x=String(gc(r,ad)||'').substring(0,10); if(!x) return; if(!dMin||x<dMin) dMin=x; if(!dMax||x>dMax) dMax=x; });
+  const ids=new Set(rows.map(r=>r.taskId)).size;
+  return { rows, weekTag:wk, stats:{ qplTasks, dMin, dMax, ids, qpt:qpt.rows.length, noId:qpt.rows.length-rows.length,
     db:rows.filter(r=>r.source==='Data Base').length, teams:rows.filter(r=>r.source==='Teams').length, un:rows.filter(r=>r.source==='Unmatched').length } };
 }
 function loadQC(){
@@ -656,7 +677,7 @@ function renderQC(){
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcWeek))}</h3><span id="qcCount"></span></div><div class="panel-body">
     <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button></div>
     ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}
-    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}</div></div></div><div id="qcContent"></div>`;
+    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}<br>🔢 IDs مختلفة: ${qcStats.ids} · تواريخ الشيت: ${esc(qcStats.dMin)} ← ${esc(qcStats.dMax)} · مجموع Tasks في Quality Per Labeler للأسبوع: ${qcStats.qplTasks}${window.DATA_CACHED?'<br>⏳ البيانات دي من الكاش ولسه بتتحدّث، استنى ثواني':''}</div></div></div><div id="qcContent"></div>`;
   document.getElementById('qcViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; qcView=b.dataset.view;
     el.querySelectorAll('#qcViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderQCContent(); };
   wireQf('qcBar',qcSt,renderQCContent,renderQC); renderQCContent();
@@ -919,13 +940,21 @@ function renderTeamsResults(){
 //  ACCESS GATE
 // ============================================================
 function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
+function showSplash(u){
+  const old=document.getElementById('splash'); if(old) old.remove();
+  const d=document.createElement('div'); d.id='splash';
+  d.innerHTML='<svg viewBox="0 0 100 100"><defs><linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><circle cx="50" cy="50" r="48" fill="rgba(14,116,144,.18)" stroke="rgba(34,211,238,.35)"/><polygon points="24,24 64,24 56,39 24,39" fill="url(#spg)"/><polygon points="32,43 72,43 64,58 32,58" fill="url(#spg)"/><polygon points="40,62 80,62 72,77 40,77" fill="url(#spg)"/></svg>'
+   +'<div class="sp-t">MEEG</div><div class="sp-s">METI COMPANY · PRODUCTIVITY</div><div class="sp-w">WELCOME</div>'
+   +'<div class="sp-n">'+esc(u.name)+'</div>'+(u.position?'<div class="sp-p">'+esc(String(u.position).replace(/\./g,'').toUpperCase())+'</div>':'')
+   +'<div class="sp-bar"><i></i></div><div class="sp-d"><i></i><i></i><i></i></div>';
+  const close=()=>{ d.classList.add('out'); setTimeout(()=>d.remove(),600); };
+  d.onclick=close; document.body.appendChild(d); setTimeout(close,2500);
+}
 function bootApp(u){
   CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
   document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
   document.getElementById('gate').classList.add('hide'); loadTab('live');
-  const w=document.createElement('div'); w.className='welcome';
-  w.textContent='👋 مرحباً '+u.name+(u.position?' — '+u.position:'');
-  document.body.appendChild(w); setTimeout(()=>w.remove(),4600);
+  showSplash(u);
 }
 function tryEmail(email){
   gateMsg('Checking…'); CURRENT_EMAIL=email; initData();

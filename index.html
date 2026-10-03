@@ -111,6 +111,8 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .gate-input::placeholder{color:var(--ink-soft)}
 .gate-input:focus{border-color:var(--acc);box-shadow:0 0 0 4px rgba(103,232,249,.22)}
 .gate-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px #26305a inset}
+.welcome{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:3000;padding:12px 22px;border-radius:16px;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:wel 4.5s ease forwards;pointer-events:none}
+@keyframes wel{0%{opacity:0;transform:translate(-50%,-14px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-14px)}}
 .shot{max-height:none!important;overflow:visible}
 .shot td.wrap{white-space:normal;max-width:380px}
 </style>
@@ -192,22 +194,28 @@ function prefetchAll(){
   BUNDLE=callApi('bundle',{names:ALL_NAMES,tail:DB_TAIL}).then(r=>{
     r._ts=Date.now(); applyBundle(r,false); IDB.set('bundle',r);
     if(STALE){ STALE=false; refreshView(); }
+    prewarm();
     return r;
   }).catch(e=>{ BUNDLE=null; throw e; });
   return BUNDLE;
 }
+let CACHE_P=null;
 function initData(){
   if(DATA_INIT) return; DATA_INIT=true;
-  IDB.get('bundle').then(c=>{ if(c&&c.sheets&&!SHEETS[CFG.DB]){ applyBundle(c,true); STALE=true; } });
+  CACHE_P=IDB.get('bundle').then(c=>{ if(c&&c.sheets&&!SHEETS[CFG.DB]){ applyBundle(c,true); STALE=true; } });
   prefetchAll().catch(()=>{});
 }
+// تجهيز باقي التابات في الخلفية عشان التنقل يبقى لحظي
+function prewarm(){ ['qc','teamsq','teams','fast'].forEach((t,i)=>setTimeout(()=>{ try{ loadTab(t); }catch(e){} },600+i*700)); }
 function refreshView(){
   Object.keys(loaded).forEach(k=>loaded[k]=false);
   if(document.getElementById('gate').classList.contains('hide')) loadTab(currentTab());
 }
 function getSheet(name){
-  if(SHEETS[name]) return Promise.resolve(SHEETS[name]);
-  return prefetchAll().then(()=>SHEETS[name]||callApi('sheet',{name,bg:name===CFG.DB?1:0,tail:name===CFG.DB?DB_TAIL:0}).then(r=>SHEETS[name]=r));
+  return (CACHE_P||Promise.resolve()).then(()=>{
+    if(SHEETS[name]) return SHEETS[name];
+    return prefetchAll().then(()=>SHEETS[name]||callApi('sheet',{name,bg:name===CFG.DB?1:0,tail:name===CFG.DB?DB_TAIL:0}).then(r=>SHEETS[name]=r));
+  });
 }
 const optSheet = (n)=>getSheet(n).catch(()=>({headers:[],rows:[]}));
 
@@ -226,7 +234,14 @@ const pad=n=>String(n).padStart(2,'0');
 // ---------- الوقت والشيفتات (المصدر الوحيد لقواعد الشيفت) ----------
 // Room 108/106/4th: ON 00:00-07:55 | M 08:00-15:55 | N 16:00-23:55
 // Room 102:         ON 00:30-08:25 | M 08:30-16:25 | N 16:30-00:25 (اليوم التالي بيتحسب N لليوم السابق)
+const _tsC=new Map();
 function parseTS(v){
+  if(v===''||v==null) return null;
+  const k=String(v); let r=_tsC.get(k);
+  if(r===undefined){ r=parseTS_raw(k); _tsC.set(k,r); }
+  return r;
+}
+function parseTS_raw(v){
   if(v===''||v==null) return null;
   const s=String(v).trim(); let y,mo,d,h=0,mi=0,se=0,ap='',m;
   if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){
@@ -515,6 +530,31 @@ function renderActiveTags(){
 }
 function groupCount(rows,idx){ const m={}; rows.forEach(r=>{ const k=r[idx]||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
 function renderLiveBody(){
+  renderLiveBody_();
+  const c=taskCardHtml(); if(c) document.getElementById('liveBody').insertAdjacentHTML('afterbegin',c);
+}
+function taskCardHtml(){
+  const q=normId(liveState.search).toLowerCase(); if(q.length<5) return '';
+  const L=liveData, c=cmap(L.headers), g=(r,n)=>{ const i=ci(c,[n]); return i>=0?r[i]:''; };
+  if(L.idIdx<0) return '';
+  if(!L._byId){ L._byId={}; L.rows.forEach(r=>{ const id=normId(r[L.idIdx]).toLowerCase(); if(id) (L._byId[id]=L._byId[id]||[]).push(r); }); }
+  const hits=L._byId[q]; if(!hits) return '';
+  let qr=null; const qp=SHEETS[CFG.QPT];
+  if(qp){ if(!L._qIdx){ L._qm=cmap(qp.headers); const i=ci(L._qm,['actual id']); L._qIdx={}; qp.rows.forEach(r=>{ const k=normId(r[i]).toLowerCase(); if(k) L._qIdx[k]=r; }); } qr=L._qIdx[q]; }
+  const qv=n=>qr?fmtPct(toNum(qr[ci(L._qm,[n])])):'-';
+  const kv=(k,v)=>`<div><span style="color:var(--ink-soft);font-size:10.5px">${k}</span><br><b>${esc(v)||'-'}</b></div>`;
+  const cards=hits.map(r=>{
+    const link=String(r[L.linkIdx]||''), ok=/^https?:\/\//.test(link);
+    return `<div class="card" style="margin-bottom:8px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+      ${kv('🕐 Submitted at',r[L.tsIdx])}${kv('⏱ Shift',r.sh)}${kv('📍 Room',L.locationColIdx>=0?r[L.locationColIdx]:'')}${kv('🖥️ PC',g(r,'pc no'))}
+      ${kv('🔖 QC',g(r,'qtc name'))}${kv('👤 Labeler',g(r,'labeler name'))}${kv('✉️ Email',g(r,'yubikey email'))}${kv('📁 Queue',g(r,'queue name'))}
+      ${kv('🔬 Modality',g(r,'modality'))}${kv('✅ Pass',g(r,'pass'))}${kv('🧱 Stage',g(r,'stage'))}${kv('📦 Objects',g(r,'object count'))}</div>
+      ${ok?`<a class="btn dark" style="margin-top:10px;text-decoration:none" href="${esc(link)}" target="_blank" rel="noopener">🔗 Open Task ↗</a>`:''}</div>`;
+  }).join('');
+  return `<div class="panel"><div class="panel-head"><h3>🔎 Task ${esc(q)} — ${hits.length} submit${hits.length>1?'s':''}</h3>
+    <span>Quality: Artifacts ${qv('artifacts')} · Attribute ${qv('attribute')} · Total ${qv('total accuracy')}</span></div><div class="panel-body">${cards}</div></div>`;
+}
+function renderLiveBody_(){
   renderActiveTags();
   const rows=getFilteredLiveRows(), si=liveData.slicerIndices, body=document.getElementById('liveBody');
   if(liveState.tab==='__total__'){ body.innerHTML=renderTotalSubmitView(rows,si); return; }
@@ -573,18 +613,18 @@ function renderTopPerformersView(rows,si){
 // ============================================================
 //  QC QUALITY — Quality Per Task × Data Base (Actual ID) + fallback Actual Email → Teams
 // ============================================================
-let qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='totals';
+let qcStats={}, qcRowsData=null, qcWeek='', qcSt={shift:'',qtc:''}, qcView='totals';
 // توحيد شكل الـ ID عشان مطابقة "1463495465" مع "1463495465.0" أو " 1463495465 " تنجح برضو
 function normId(v){ return String(v==null?'':v).trim().replace(/\.0+$/,''); }
 function buildQC(qpt, db, teams, empty, qpl){
   const q=cmap(qpt.headers), iId=ci(q,['actual id']), iEm=ci(q,['actual email']), iExp=ci(q,['expected date']),
         iArt=ci(q,['artifacts']), iAttr=ci(q,['attribute']), iAcc=ci(q,['total accuracy']);
-  const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']);
+  const d=cmap(db.headers), iT=ci(d,['task id']), iQ=ci(d,['qtc name']), iTs=ci(d,['timestamp']), iU=ci(d,['unit']), iL=ci(d,['labeler name']), iP=ci(d,['pass']), iLk=ci(d,['task link']);
   const byTask={};
   db.rows.forEach(r=>{
     const id=normId(gc(r,iT)); if(!id) return;
     const isQA=/QA|QUALITY/i.test(String(gc(r,iP)||''));
-    if(!byTask[id]||isQA) byTask[id]={ qtc:String(gc(r,iQ)||'').trim(), ts:gc(r,iTs), unit:gc(r,iU), labeler:String(gc(r,iL)||'').trim() };
+    if(!byTask[id]||isQA) byTask[id]={ qtc:String(gc(r,iQ)||'').trim(), ts:gc(r,iTs), unit:gc(r,iU), labeler:String(gc(r,iL)||'').trim(), link:String(gc(r,iLk)||'').trim() };
   });
   const owners=loadOwners(teams,empty); let minExp='';
   const rows=[];
@@ -595,26 +635,28 @@ function buildQC(qpt, db, teams, empty, qpl){
     const t=byTask[id];
     if(t){
       const s=shiftOf(t.unit,parseTS(t.ts));
-      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:s?s.shift:(normShift(shiftFromName(t.qtc))||'—'), labeler:t.labeler, source:'Data Base'});
+      rows.push({...base, qtc:cleanName(t.qtc)||'—', shiftN:s?s.shift:(normShift(shiftFromName(t.qtc))||'—'), labeler:t.labeler, link:t.link, source:'Data Base'});
     } else {
       const em=String(gc(r,iEm)||''), m=em.match(/\d{6}/), o=m&&owners[m[0]];
       if(o) rows.push({...base, qtc:cleanName(o.qtc)||'—', shiftN:o.shift||'—', labeler:em, source:'Teams'});
       else rows.push({...base, qtc:'—', shiftN:'—', labeler:em, source:'Unmatched'});
     }
   });
-  return { rows, weekTag:qplWeek(qpl)||weekKey(minExp) };
+  return { rows, weekTag:qplWeek(qpl)||weekKey(minExp), stats:{ qpt:qpt.rows.length, noId:qpt.rows.length-rows.length,
+    db:rows.filter(r=>r.source==='Data Base').length, teams:rows.filter(r=>r.source==='Teams').length, un:rows.filter(r=>r.source==='Unmatched').length } };
 }
 function loadQC(){
   document.getElementById('view-qc').innerHTML=LOADING;
   Promise.all([getSheet(CFG.QPT),getSheet(CFG.DB),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY),optSheet(CFG.QPL)])
-    .then(([a,b,c,e,q])=>{ const r=buildQC(a,b,c,e,q); qcRowsData=r.rows; qcWeek=r.weekTag; renderQC(); })
+    .then(([a,b,c,e,q])=>{ const r=buildQC(a,b,c,e,q); qcRowsData=r.rows; qcWeek=r.weekTag; qcStats=r.stats; renderQC(); })
     .catch(e=>{ document.getElementById('view-qc').innerHTML=errBox(e.message,'loadQC'); });
 }
 function renderQC(){
   const el=document.getElementById('view-qc'); qcView='totals';
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🎯 QC Quality — ${esc(weekLabel(qcWeek))}</h3><span id="qcCount"></span></div><div class="panel-body">
     <div class="filters" id="qcViews"><button class="pill on" data-view="totals">📊 Totals</button><button class="pill" data-view="qc">🔖 Per QC</button><button class="pill" data-view="individual">📝 Per Task</button></div>
-    ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}</div></div><div id="qcContent"></div>`;
+    ${qfBar('qcBar',qcRowsData.map(r=>({...r,week:qcWeek})),qcSt)}
+    <div class="who" style="margin-top:8px">📊 Quality Per Task: ${qcStats.qpt} صف · مطابق في Data Base: ${qcStats.db} · من Teams: ${qcStats.teams} · Unmatched: ${qcStats.un} · بدون ID: ${qcStats.noId}</div></div></div><div id="qcContent"></div>`;
   document.getElementById('qcViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; qcView=b.dataset.view;
     el.querySelectorAll('#qcViews .pill').forEach(p=>p.classList.toggle('on',p===b)); renderQCContent(); };
   wireQf('qcBar',qcSt,renderQCContent,renderQC); renderQCContent();
@@ -878,9 +920,12 @@ function renderTeamsResults(){
 // ============================================================
 function gateMsg(m){ document.getElementById('gateMsg').textContent=m; }
 function bootApp(u){
-  CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); }catch(e){}
+  CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
   document.getElementById('userChip').textContent='👤 '+u.name+(u.position?' — '+u.position:'');
   document.getElementById('gate').classList.add('hide'); loadTab('live');
+  const w=document.createElement('div'); w.className='welcome';
+  w.textContent='👋 مرحباً '+u.name+(u.position?' — '+u.position:'');
+  document.body.appendChild(w); setTimeout(()=>w.remove(),4600);
 }
 function tryEmail(email){
   gateMsg('Checking…'); CURRENT_EMAIL=email; initData();
@@ -898,7 +943,16 @@ const lookupWho=debounce(()=>{
 },500);
 document.getElementById('gateEmail').addEventListener('input',()=>{ document.getElementById('gateWho').innerHTML=''; lookupWho(); });
 if(API_URL.indexOf('PASTE_YOUR')===0) gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
-else if(CURRENT_EMAIL){ document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
+else if(CURRENT_EMAIL){
+  initData();
+  let cu=null; try{ cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); }catch(e){}
+  if(cu&&cu.ok&&cu.email===CURRENT_EMAIL){
+    bootApp(cu);   // يفتح فوراً من الكاش، والفحص بيتم في الخلفية
+    callApi('checkemail',{email:CURRENT_EMAIL}).then(u=>{
+      if(!(u&&u.ok)){ try{localStorage.removeItem('meeg_user');}catch(e){} document.getElementById('gate').classList.remove('hide'); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
+    }).catch(()=>{});
+  } else { document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
+}
 </script>
 </body>
 </html>

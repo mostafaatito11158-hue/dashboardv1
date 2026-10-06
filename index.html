@@ -960,7 +960,9 @@ function renderTeamsResults(){
 //  ANALYSIS — تحليل التاسكات + Rate + Issue + الشباب
 // ============================================================
 const RATES=['Excellent','Good','Average','Poor'];
-const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc',shift:''}};
+const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc',shift:'',an:''}};
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+function anWeek(ds,off){ const p=ds.split('-').map(Number), d=new Date(p[0],p[1]-1,p[2]+(off||0)*7); d.setDate(d.getDate()-((d.getDay()+6)%7)); const e=new Date(d); e.setDate(e.getDate()+6); return [ymd(d),ymd(e)]; }
 function anBuild(db){
   const c=cmap(db.headers), I={ts:ci(c,['timestamp']),u:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),p:ci(c,['pass']),lk:ci(c,['task link']),id:ci(c,['task id'])}, m={};
   db.rows.forEach(r=>{
@@ -991,14 +993,19 @@ function loadAnalysis(){
 function anShell(){
   const el=document.getElementById('view-analysis'), f=AN.f, v=AN.view;
   const opt=k=>[...new Set(AN.tasks.map(t=>t[k]).filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  const ans=[...new Set([...AN.names,...Object.values(AN.log).map(e=>e.analyst)].filter(Boolean))].sort();
+  const wl=[...new Set(Object.values(AN.log).map(e=>e.date).filter(Boolean).map(x=>anWeek(x)[0]).concat(anWeek(ymd(new Date()))[0]))].sort().reverse();
+  const cur=f.from+'|'+f.to, wlab=r=>{ const a=r.split('-').map(Number), b=anWeek(r)[1].split('-').map(Number); return 'Week '+a[2]+' '+MON[a[1]-1]+' → '+b[2]+' '+MON[b[1]-1]; };
+  const wk=v==='tasks'?'':`<span id="anWk"><button class="pill" data-w="0">This week</button><button class="pill" data-w="-1">Last week</button></span><select id="anWeek"><option value="">📆 Pick a week</option>${wl.map(r=>{ const rg=anWeek(r), val=rg[0]+'|'+rg[1]; return `<option value="${val}" ${val===cur?'selected':''}>${wlab(r)}</option>`; }).join('')}</select>`;
   const pills=(k,a)=>a.map(([x,t])=>`<button class="pill ${f[k]===x?'on':''}" data-k="${k}" data-v="${x}">${t}</button>`).join('');
   el.innerHTML=`<div class="panel"><div class="panel-head"><h3>🧪 Analysis</h3><span id="anCount"></span></div><div class="panel-body">
     <div class="filters" id="anViews">${[['tasks','📝 Tasks'],['ratings','⭐ Ratings'],['team','👥 Analysts'],['issues','⚠️ Issues']].map(([k,t])=>`<button class="pill ${v===k?'on':''}" data-view="${k}">${t}</button>`).join('')}</div>
-    <div class="filters"><label>${v==='tasks'?'Task date':'Analysis date'}:</label><span class="dp" id="anFrom"></span><label>→</label><span class="dp" id="anTo"></span><button class="pill" id="anAll">All dates</button></div>
+    <div class="filters"><label>${v==='tasks'?'Task date':'Analysis date'}:</label><span class="dp" id="anFrom"></span><label>→</label><span class="dp" id="anTo"></span><button class="pill" id="anAll">All dates</button>${wk}</div>
     ${v==='tasks'?`<div class="filters"><select id="anQueue"><option value="">📁 All Queues</option>${opt('queue')}</select><select id="anLab"><option value="">👤 All Labelers</option>${opt('lab')}</select><select id="anQc"><option value="">🔖 All QC</option>${opt('qc')}</select>
       <input id="anQ" placeholder="🔎 Task id / name…" value="${esc(f.q)}"></div>
       <div class="filters" id="anPills"><label>Pass:</label>${pills('pass',[['','All'],['FP','FP'],['QA','QA']])}<label>Type:</label>${pills('mod',[['','All'],['Lidar','Lidar'],['Lane Line','Lane Line']])}<label>Status:</label>${pills('status',[['','All'],['todo','Not analyzed'],['done','Analyzed'],['issue','Has issue']])}</div>`:''}
     ${v==='ratings'?`<div class="filters" id="anPills"><label>Group by:</label>${pills('subj',[['qc','🔖 QC'],['lab','👤 Labeler']])}<label>Shift:</label>${pills('shift',[['','All'],['M','M'],['N','N'],['ON','ON']])}</div>`:''}
+    ${v==='issues'?`<div class="filters"><select id="anAn"><option value="">👥 All Analysts</option>${ans.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select><select id="anQc"><option value="">🔖 All QC (reviewed)</option>${opt('qc')}</select></div>`:''}
   </div></div><div id="anBody"></div>`;
   document.getElementById('anViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; AN.view=b.dataset.view; AN.lim=100; anShell(); };
   const d0=x=>new Date((x||AN.dmax||fmtDT(new Date()).substring(0,10))+'T00:00:00');
@@ -1006,16 +1013,18 @@ function anShell(){
   document.getElementById('anFrom').onchange=()=>{ f.from=document.getElementById('anFrom').value; AN.lim=100; anBody(); };
   document.getElementById('anTo').onchange=()=>{ f.to=document.getElementById('anTo').value; AN.lim=100; anBody(); };
   document.getElementById('anAll').onclick=()=>{ f.from=f.to=''; anBody(); };
-  [['anQueue','queue'],['anLab','lab'],['anQc','qc']].forEach(([id,k])=>{ const x=document.getElementById(id); if(!x) return; x.value=f[k]; x.onchange=()=>{ f[k]=x.value; AN.lim=100; anBody(); }; makeSearchable(x); });
+  [['anQueue','queue'],['anLab','lab'],['anQc','qc'],['anAn','an']].forEach(([id,k])=>{ const x=document.getElementById(id); if(!x) return; x.value=f[k]; x.onchange=()=>{ f[k]=x.value; AN.lim=100; anBody(); }; makeSearchable(x); });
   const q=document.getElementById('anQ'); if(q) q.oninput=debounce(()=>{ f.q=q.value; AN.lim=100; anBody(); },250);
   const pb=document.getElementById('anPills'); if(pb) pb.onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; f[b.dataset.k]=b.dataset.v; pb.querySelectorAll('.pill[data-k="'+b.dataset.k+'"]').forEach(p=>p.classList.toggle('on',p===b)); AN.lim=100; anBody(); };
+  document.querySelectorAll('#anWk .pill').forEach(b=>b.onclick=()=>{ const r=anWeek(ymd(new Date()),+b.dataset.w); f.from=r[0]; f.to=r[1]; anShell(); });
+  const wsel=document.getElementById('anWeek'); if(wsel) wsel.onchange=()=>{ if(!wsel.value) return; const r=wsel.value.split('|'); f.from=r[0]; f.to=r[1]; anShell(); };
   anBody();
 }
 function anBody(){
   const b=document.getElementById('anBody'), f=AN.f;
   if(AN.view==='tasks') return anTasks(b);
   const L=Object.values(AN.log).filter(e=>(!f.from||e.date>=f.from)&&(!f.to||e.date<=f.to));
-  AN.view==='ratings'?anRatings(b,f.shift?L.filter(e=>{ const t=AN.byId[e.id]; return t&&t.sh===f.shift; }):L):AN.view==='issues'?anIssues(b,L):anTeam(b,L);
+  AN.view==='ratings'?anRatings(b,f.shift?L.filter(e=>{ const t=AN.byId[e.id]; return t&&t.sh===f.shift; }):L):AN.view==='issues'?anIssues(b,L.filter(e=>(!f.an||e.analyst===f.an)&&(!f.qc||e.qc===f.qc))):anTeam(b,L);
 }
 function anFiltered(){
   const f=AN.f, q=f.q.trim().toLowerCase();

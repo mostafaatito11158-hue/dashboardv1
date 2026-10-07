@@ -33,7 +33,9 @@ body{margin:0;background:var(--back);background-attachment:fixed;background-colo
 .chip-user .uinfo{display:flex;flex-direction:column;line-height:1.25;text-align:left}
 .chip-user .uinfo b{font-size:12px}
 .chip-user .uinfo small{font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
-.mp th,.mp td{text-align:center}.mp th:first-child,.mp td:first-child{text-align:left}
+.mp th,.mp td{text-align:center}.mp thead tr:first-child th:first-child,.mp td:first-child{text-align:left}
+@keyframes flashbg{0%{background:rgba(250,204,21,.6);box-shadow:0 0 0 2px rgba(250,204,21,.6)}100%{background:transparent;box-shadow:0 0 0 2px transparent}}
+.flash{animation:flashbg 2.4s ease-out;border-radius:4px}
 .mp .bar{display:inline-block;width:80px;height:5px;border-radius:4px;background:var(--chip-line);overflow:hidden;vertical-align:middle;margin-right:8px}.mp .bar i{display:block;height:100%;background:var(--acc)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 .tab{border:1px solid var(--chip-line);background:var(--chip);border-radius:12px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;color:var(--ink-soft)}
@@ -142,6 +144,20 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .shot{max-height:none!important;overflow:visible}
 .shot td.nm{white-space:normal;max-width:380px}
 .shot td{padding:3px 8px;line-height:1.3}.shot th{padding:5px 8px}
+
+/* ===== إحساس الضغط على الزراير: ضغطة + نور + موجة ===== */
+button,.tab,.pill,.btn,.ss-btn,.dp-d{transition:transform .12s ease,box-shadow .18s ease,filter .18s ease,background .2s,color .2s,border-color .2s;-webkit-tap-highlight-color:transparent}
+@media (hover:hover){
+  button:not(:disabled):hover,.tab:hover,.pill:hover,.btn:hover,.ss-btn:hover,.dp-d:hover{filter:brightness(1.14);transform:translateY(-1px)}
+}
+button:not(:disabled):active,.tab:active,.pill:active,.btn:active,.ss-btn:active,.dp-d:active{
+  transform:scale(.94) translateY(0);filter:brightness(1.22);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 45%,transparent),0 0 16px color-mix(in srgb,var(--acc) 70%,transparent)}
+.rip-host{position:relative}
+.ripc{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.ripc i{position:absolute;border-radius:50%;background:var(--acc);opacity:.5;transform:scale(0);animation:ripple .6s ease-out forwards}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+@media (prefers-reduced-motion:reduce){ .ripc i{animation:none;opacity:0} button,.tab,.pill,.btn,.ss-btn,.dp-d{transition:none} }
 </style>
 </head>
 <body>
@@ -415,7 +431,7 @@ document.getElementById('tabs').addEventListener('click', e=>{
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
   document.getElementById('view-'+btn.dataset.tab).style.display='block';
   loadTab(btn.dataset.tab);
-  if(DIRTY.has(btn.dataset.tab)){ DIRTY.delete(btn.dataset.tab); setTimeout(softRender,0); }
+  if(DIRTY.has(btn.dataset.tab)){ DIRTY.delete(btn.dataset.tab); setTimeout(()=>softRender(true),0); }
 });
 const loaded={};
 function loadTab(tab){
@@ -447,24 +463,74 @@ function autoUpdate(){
     if(d.rows&&d.rows.length){ for(const r of d.rows) db.rows.push(r); if(db.orange&&d.orange) for(const o of d.orange) db.orange.push(o); changed=true; }
     db.total=d.total;
     if(sm&&sm.sheets){ Object.entries(sm.sheets).forEach(([n,v])=>{ if(v&&!v.error){ SHEETS[n]=v; changed=true; } }); }
-    if(changed) softRender();
+    if(changed) softRender(true); else if(currentTab()==='analysis') softRender(false);
     setUpd(new Date().toLocaleString()+' · live'+(d.rows&&d.rows.length?' · +'+d.rows.length+' new rows':''));
   }).catch(()=>{ setUpd('⚠️ Update failed — retrying'); }).finally(()=>{ autoBusy=false; });
 }
 // يعيد رسم التاب الحالي بالداتا الجديدة ويحافظ على الفلاتر
-function softRender(){
-  const t=currentTab(), db=SHEETS[CFG.DB];
+// ---------- وميض الأرقام اللي اتغيرت بعد التحديث التلقائي ----------
+const NUMRE=/^[+\-–—\d.,%\s]+$/;
+function snapView(root){
+  const m=new Map(), seen={}, key=(k)=>{ seen[k]=(seen[k]||0)+1; return k+'#'+seen[k]; };
+  root.querySelectorAll('table').forEach((tb,ti)=>{
+    const rows=tb.querySelectorAll('tbody tr'); if(rows.length>300) return;
+    const pn=tb.closest('.panel'), h=pn&&pn.querySelector('h3'), title=(h?h.textContent.trim():'t'+ti);
+    if(/Row Detail/i.test(title)) return;
+    rows.forEach(tr=>{ const c=tr.children, rk=c[0]?c[0].textContent.trim():'';
+      for(let j=1;j<c.length;j++){ const t=c[j].textContent.trim(); if(t&&NUMRE.test(t)) m.set(key(title+'|'+rk+'|'+j),t); } });
+  });
+  root.querySelectorAll('.stat').forEach((st,i)=>{ const b=st.querySelector('b'), sp=st.querySelector('span'); if(b) m.set(key('stat|'+(sp?sp.textContent.trim():i)),b.textContent.trim()); });
+  return m;
+}
+function flashDiff(root,before){
+  if(!before||!before.size) return;
+  const seen={}, key=(k)=>{ seen[k]=(seen[k]||0)+1; return k+'#'+seen[k]; };
+  root.querySelectorAll('table').forEach((tb,ti)=>{
+    const rows=tb.querySelectorAll('tbody tr'); if(rows.length>300) return;
+    const pn=tb.closest('.panel'), h=pn&&pn.querySelector('h3'), title=(h?h.textContent.trim():'t'+ti);
+    if(/Row Detail/i.test(title)) return;
+    rows.forEach(tr=>{ const c=tr.children, rk=c[0]?c[0].textContent.trim():'';
+      for(let j=1;j<c.length;j++){ const t=c[j].textContent.trim(); if(!t||!NUMRE.test(t)) continue; const o=before.get(key(title+'|'+rk+'|'+j)); if(o!==undefined&&o!==t){ c[j].classList.remove('flash'); void c[j].offsetWidth; c[j].classList.add('flash'); } } });
+  });
+  root.querySelectorAll('.stat').forEach((st,i)=>{ const b=st.querySelector('b'), sp=st.querySelector('span'); if(!b) return; const o=before.get(key('stat|'+(sp?sp.textContent.trim():i))), t=b.textContent.trim(); if(o!==undefined&&o!==t){ b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); } });
+}
+// يراقب إعادة الرسم، ولما تستقر يقارن ويوميض. أي ضغطة منك تلغي المقارنة (عشان فلاترك ما تتحسبش تحديث)
+function watchFlash(root,before,maxMs){
+  let timer, obs; const cancel=()=>{ if(obs) obs.disconnect(); clearTimeout(timer); document.removeEventListener('pointerdown',cancel,true); };
+  const done=()=>{ cancel(); if(root.offsetParent!==null) flashDiff(root,before); };
+  obs=new MutationObserver(()=>{ clearTimeout(timer); timer=setTimeout(done,250); });
+  obs.observe(root,{childList:true,subtree:true});
+  document.addEventListener('pointerdown',cancel,true);
+  timer=setTimeout(done,maxMs||1500);
+}
+function softRender(force){
+  const t=currentTab(), db=SHEETS[CFG.DB], root=document.getElementById('view-'+t);
+  if(root){ try{ watchFlash(root,snapView(root),t==='analysis'?6000:1500); }catch(e){} }
   try{
     if(t==='live'&&liveData){ const y=window.scrollY; liveData=buildLive(db); renderLiveShell(); window.scrollTo(0,y); }
     else if(t==='qc'&&qcRowsData){ Promise.all([getSheet(CFG.QPT),getSheet(CFG.DB),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY),optSheet(CFG.QPL)]).then(([a,b,c,e,q])=>{ const r=buildQC(a,b,c,e,q); qcRowsData=r.rows; qcWeek=r.weekTag; qcStats=r.stats; renderQCContent(); }).catch(()=>{}); }
     else if(t==='teamsq'&&tqData){ Promise.all([getSheet(CFG.QPL),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY)]).then(([a,b,c])=>{ tqData=buildTQ(a,b,c); renderTeamsQContent(); }).catch(()=>{}); }
     else if(t==='teams'){ const d=document.getElementById('teamsDate'); if(d&&d.value) Promise.all([getSheet(CFG.TEAMS),getSheet(CFG.DB)]).then(([tm,x])=>{ teamsRes=computeTeams(tm,x,d.value,teamsSt.shift); renderTeamsResults(); }).catch(()=>{}); }
     else if(t==='fast'){ const b=document.querySelector('#fastPresets .pill.on'); if(b) b.click(); }
+    else if(t==='analysis'){ softAnalysis(force); }
   }catch(e){}
   Object.keys(loaded).forEach(k=>{ if(loaded[k]&&k!==t) DIRTY.add(k); });   // باقي التابات تتحدث أول ما تفتحها
 }
 setInterval(autoUpdate,AUTO_MS);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&Date.now()-lastAuto>10000) autoUpdate(); });
+// ---------- موجة نور من مكان الضغط على أي زرار / تاب / فلتر ----------
+document.addEventListener('pointerdown',e=>{
+  const el=e.target.closest&&e.target.closest('button,.tab,.pill,.btn,.ss-btn,.dp-d');
+  if(!el||el.disabled) return;
+  const r=el.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;
+  const host=document.createElement('span'); host.className='ripc';
+  const c=document.createElement('i'); c.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';
+  host.appendChild(c);
+  const needPos=getComputedStyle(el).position==='static'; if(needPos) el.classList.add('rip-host');
+  el.appendChild(host);
+  setTimeout(()=>{ host.remove(); if(needPos&&!el.querySelector('.ripc')) el.classList.remove('rip-host'); },650);
+},{passive:true});
+
 
 
 // ============================================================
@@ -1039,14 +1105,38 @@ function anBuild(db){
   const out=Object.values(m); out.forEach(x=>{ x.sh=shiftFromName(x.qcRaw)||x.tsh||''; });
   return out.sort((a,b)=>b.ms-a.ms);
 }
-function loadAnalysis(){
-  const el=document.getElementById('view-analysis'); el.innerHTML=LOADING;
-  Promise.all([getSheet(CFG.DB),callApi('sheet',{name:'Analysis Log'}).catch(()=>({headers:[],rows:[]})),callApi('analysts').catch(()=>({names:[]}))]).then(([db,lg,an])=>{
+function anApply(db,lg,an){
     AN.tasks=anBuild(db); AN.byId={}; AN.tasks.forEach(t=>AN.byId[t.id]=t); AN.log={};
     const c=cmap(lg.headers||[]), g=(r,n)=>String(gc(r,ci(c,[n]))||'');
     (lg.rows||[]).forEach(r=>{ const id=normId(g(r,'task id')); if(!id) return; const at=g(r,'analyzed at');
       AN.log[id]={id,at,date:at.substring(0,10),analyst:g(r,'analyst'),rating:g(r,'rating'),issue:g(r,'issue'),lab:g(r,'labeler'),qc:g(r,'qc'),mod:g(r,'modality'),queue:g(r,'queue'),pass:g(r,'pass')}; });
     AN.names=(an.names||[]).slice(); const me=window.ME&&window.ME.name; if(me&&!AN.names.includes(me)) AN.names.unshift(me);
+}
+// تحديث تلقائي لتاب Analysis: بيحافظ على الفلاتر وعلى اللي لسه ما اتسيفش في الصفوف
+let anSig='';
+function softAnalysis(force){
+  if(!document.getElementById('anBody')) return;
+  Promise.all([callApi('sheet',{name:'Analysis Log'}).catch(()=>null),callApi('analysts').catch(()=>null)]).then(([lg,an])=>{
+    if(!lg) return;
+    const sig=(lg.rows||[]).map(r=>r[1]+'~'+r[3]+'~'+r[4]).join('|');
+    if(!force&&sig===anSig) return; anSig=sig;
+    const drafts={};
+    document.querySelectorAll('#anBody tr[data-id]').forEach(tr=>{
+      const d=tr.querySelector('.an-a option[selected]'), a=tr.querySelector('.an-a').value, on=tr.querySelector('.an-r .on'), r=on?on.dataset.r:'', i=tr.querySelector('.an-i').value, l=AN.log[tr.dataset.id];
+      if(a!==(d?d.value:'')||r!==((l&&l.rating)||'')||i!==((l&&l.issue)||'')) drafts[tr.dataset.id]={a,r,i};
+    });
+    const y=window.scrollY;
+    anApply(SHEETS[CFG.DB],lg,an||{names:AN.names});
+    anShell();
+    Object.entries(drafts).forEach(([id,x])=>{ const tr=document.querySelector('#anBody tr[data-id="'+id.replace(/"/g,'\\"')+'"]'); if(!tr) return;
+      tr.querySelector('.an-a').value=x.a; tr.querySelectorAll('.an-r .pill').forEach(b=>b.classList.toggle('on',b.dataset.r===x.r)); tr.querySelector('.an-i').value=x.i; });
+    window.scrollTo(0,y);
+  }).catch(()=>{});
+}
+function loadAnalysis(){
+  const el=document.getElementById('view-analysis'); el.innerHTML=LOADING;
+  Promise.all([getSheet(CFG.DB),callApi('sheet',{name:'Analysis Log'}).catch(()=>({headers:[],rows:[]})),callApi('analysts').catch(()=>({names:[]}))]).then(([db,lg,an])=>{
+    anApply(db,lg,an);
     AN.dmax=AN.tasks.length?AN.tasks[0].date:''; AN.f.from=AN.f.to=AN.dmax; anShell();
   }).catch(e=>{ el.innerHTML=errBox(e.message,'loadAnalysis'); });
 }

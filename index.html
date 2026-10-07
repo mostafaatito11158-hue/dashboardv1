@@ -415,6 +415,7 @@ document.getElementById('tabs').addEventListener('click', e=>{
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
   document.getElementById('view-'+btn.dataset.tab).style.display='block';
   loadTab(btn.dataset.tab);
+  if(DIRTY.has(btn.dataset.tab)){ DIRTY.delete(btn.dataset.tab); setTimeout(softRender,0); }
 });
 const loaded={};
 function loadTab(tab){
@@ -424,6 +425,47 @@ function loadTab(tab){
 }
 function refreshAll(){ BUNDLE=null; STALE=false; Object.keys(SHEETS).forEach(k=>delete SHEETS[k]); Object.keys(loaded).forEach(k=>loaded[k]=false); loadTab(currentTab()); }
 function currentTab(){ return document.querySelector('#tabs .tab.active').dataset.tab; }
+// ============================================================
+//  تحديث تلقائي كل 30 ثانية (والصفحة مفتوحة قدامك بس) — من غير ما الفلاتر تتمسح
+// ============================================================
+const AUTO_MS=30000, DIRTY=new Set(); let autoBusy=false, autoTick=0, lastAuto=0;
+function setUpd(t){ const el=document.getElementById('updTime'); if(el) el.textContent=t; }
+function autoSkip(){
+  if(document.visibilityState!=='visible'||autoBusy) return true;
+  const gate=document.getElementById('gate'); if(gate&&!gate.classList.contains('hide')) return true;
+  const a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;   // بتكتب/بتختار: استنى
+  if(document.querySelector('.ss-pop[style*="block"]')) return true;                               // قايمة مفتوحة
+  const db=SHEETS[CFG.DB]; return !db||typeof db.total!=='number';
+}
+function autoUpdate(){
+  if(autoSkip()) return; autoBusy=true; autoTick++; lastAuto=Date.now();
+  const db=SHEETS[CFG.DB]; setUpd('🔄 Updating…');
+  const small=(autoTick%4===0)?callApi('bundle',{names:[CFG.TEAMS,CFG.EMPTY,CFG.QPT,CFG.QPL].join('|'),tail:0}):Promise.resolve(null);
+  Promise.all([callApi('delta',{from:db.total}),small]).then(([d,sm])=>{
+    if(d.reset){ refreshAll(); return; }
+    let changed=false;
+    if(d.rows&&d.rows.length){ for(const r of d.rows) db.rows.push(r); if(db.orange&&d.orange) for(const o of d.orange) db.orange.push(o); changed=true; }
+    db.total=d.total;
+    if(sm&&sm.sheets){ Object.entries(sm.sheets).forEach(([n,v])=>{ if(v&&!v.error){ SHEETS[n]=v; changed=true; } }); }
+    if(changed) softRender();
+    setUpd(new Date().toLocaleString()+' · live'+(d.rows&&d.rows.length?' · +'+d.rows.length+' new rows':''));
+  }).catch(()=>{ setUpd('⚠️ Update failed — retrying'); }).finally(()=>{ autoBusy=false; });
+}
+// يعيد رسم التاب الحالي بالداتا الجديدة ويحافظ على الفلاتر
+function softRender(){
+  const t=currentTab(), db=SHEETS[CFG.DB];
+  try{
+    if(t==='live'&&liveData){ const y=window.scrollY; liveData=buildLive(db); renderLiveShell(); window.scrollTo(0,y); }
+    else if(t==='qc'&&qcRowsData){ Promise.all([getSheet(CFG.QPT),getSheet(CFG.DB),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY),optSheet(CFG.QPL)]).then(([a,b,c,e,q])=>{ const r=buildQC(a,b,c,e,q); qcRowsData=r.rows; qcWeek=r.weekTag; qcStats=r.stats; renderQCContent(); }).catch(()=>{}); }
+    else if(t==='teamsq'&&tqData){ Promise.all([getSheet(CFG.QPL),optSheet(CFG.TEAMS),optSheet(CFG.EMPTY)]).then(([a,b,c])=>{ tqData=buildTQ(a,b,c); renderTeamsQContent(); }).catch(()=>{}); }
+    else if(t==='teams'){ const d=document.getElementById('teamsDate'); if(d&&d.value) Promise.all([getSheet(CFG.TEAMS),getSheet(CFG.DB)]).then(([tm,x])=>{ teamsRes=computeTeams(tm,x,d.value,teamsSt.shift); renderTeamsResults(); }).catch(()=>{}); }
+    else if(t==='fast'){ const b=document.querySelector('#fastPresets .pill.on'); if(b) b.click(); }
+  }catch(e){}
+  Object.keys(loaded).forEach(k=>{ if(loaded[k]&&k!==t) DIRTY.add(k); });   // باقي التابات تتحدث أول ما تفتحها
+}
+setInterval(autoUpdate,AUTO_MS);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&Date.now()-lastAuto>10000) autoUpdate(); });
+
 
 // ============================================================
 //  LIVE
@@ -462,7 +504,7 @@ function loadLive(){
 function renderLiveShell(){
   const el=document.getElementById('view-live');
   const opt=a=>(a||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
-  const roomTabs=liveData.locations.map(l=>`<button class="tab" data-room="${esc(l)}">📍 ${esc(l)}</button>`).join('');
+  const roomTabs=liveData.locations.map(l=>`<button class="tab ${liveState.tab===l?'active':''}" data-room="${esc(l)}">📍 ${esc(l)}</button>`).join('');
   const so=liveData.slicerOptions;
   el.innerHTML=`
     <div class="panel"><div class="panel-body">
@@ -479,7 +521,7 @@ function renderLiveShell(){
       <div class="tagbar" id="activeTags"></div>
     </div></div>
     <div class="tabs" id="roomTabs" style="border-radius:12px;border:1px solid var(--line);margin-bottom:14px">
-      <button class="tab active" data-room="all">🌐 All</button><button class="tab" data-room="__total__">📊 Total Submit</button><button class="tab" data-room="__top__">🏆 Top Performers</button>${roomTabs}
+      <button class="tab ${liveState.tab==='all'?'active':''}" data-room="all">🌐 All</button><button class="tab ${liveState.tab==='__total__'?'active':''}" data-room="__total__">📊 Total Submit</button><button class="tab ${liveState.tab==='__top__'?'active':''}" data-room="__top__">🏆 Top Performers</button>${roomTabs}
     </div>
     <div id="liveBody"></div>`;
   const chips=(id,label,arr,set,attr)=>{

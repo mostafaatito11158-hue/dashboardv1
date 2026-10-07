@@ -411,7 +411,7 @@ function loadOwners(teams, empty){
   const map={};
   function load(sh, ykCol, source){
     if(!sh||!sh.rows.length) return;
-    const c=cmap(sh.headers), iY=ci(c,[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']), iLn=ci(c,['labeler name','labeler','name','employee name','full name']);
+    const c=cmap(sh.headers), iY=ci(c,Array.isArray(ykCol)?ykCol:[ykCol]), iQ=ci(c,['tl/ qtc','tl/qtc','tl / qtc']), iS=ci(c,['shift']), iP=ci(c,['pc no.','pc no']), iL=ci(c,['location']), iLn=ci(c,['labeler name','labeler','name','employee name','full name']);
     let cq='', cs='';
     sh.rows.forEach(r=>{
       const q=String(gc(r,iQ)||'').trim(); if(q){ cq=q; cs=shiftFromName(q)||normShift(gc(r,iS)); }
@@ -420,7 +420,7 @@ function loadOwners(teams, empty){
       map[m[0]]={ labeler:String(gc(r,iLn)||'').trim(), qtc:cq, shift:cs==='—'?'':cs, pc:String(gc(r,iP)||'').trim(), location:String(gc(r,iL)||'').trim(), source };
     });
   }
-  load(teams,'labeler yubikey','Teams'); load(empty,'yubikey','Empty');
+  load(teams,['labeler yubikey','yubikey','yubikey email'],'Teams'); load(empty,['yubikey','labeler yubikey','yubikey email'],'Empty');
   return map;
 }
 

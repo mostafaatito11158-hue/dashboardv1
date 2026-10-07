@@ -33,6 +33,8 @@ body{margin:0;background:var(--back);background-attachment:fixed;background-colo
 .chip-user .uinfo{display:flex;flex-direction:column;line-height:1.25;text-align:left}
 .chip-user .uinfo b{font-size:12px}
 .chip-user .uinfo small{font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.mp th,.mp td{text-align:center}.mp th:first-child,.mp td:first-child{text-align:left}
+.mp .bar{display:inline-block;width:80px;height:5px;border-radius:4px;background:var(--chip-line);overflow:hidden;vertical-align:middle;margin-right:8px}.mp .bar i{display:block;height:100%;background:var(--acc)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 .tab{border:1px solid var(--chip-line);background:var(--chip);border-radius:12px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;color:var(--ink-soft)}
 .tab.active,.pill.on{background:var(--acc);color:var(--on-acc);border-color:transparent}
@@ -138,7 +140,8 @@ tr.total td{font-weight:800;background:var(--chip);border-top:2px solid var(--li
 .bio-t{font-weight:700;font-size:14px}.bio-n{color:var(--ink-soft);font-size:12px;margin:4px 0 10px}.bio-l{font-size:12px;color:var(--ink-soft)}
 .an-r{white-space:nowrap}.an-r .pill{padding:3px 8px;font-size:10.5px}.an-t td select,.an-t td input{padding:4px 6px;border-radius:8px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font-size:11.5px}.an-m{font-size:10.5px;color:var(--good)}
 .shot{max-height:none!important;overflow:visible}
-.shot td.wrap{white-space:normal;max-width:380px}
+.shot td.nm{white-space:normal;max-width:380px}
+.shot td{padding:3px 8px;line-height:1.3}.shot th{padding:5px 8px}
 </style>
 </head>
 <body>
@@ -616,9 +619,22 @@ function totalTable(title,rows,idx){
   const data=Object.entries(m).sort((a,b)=>b[1].n-a[1].n);
   return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th><th>M</th><th>N</th><th>ON</th></tr></thead><tbody>${data.map(([k,o])=>`<tr><td>${esc(k)}</td><td><b>${o.n}</b></td><td>${o.M}</td><td>${o.N}</td><td>${o.ON}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}</tbody></table></div></div>`;
 }
+function mpTable(title,rows,keyOf,label,pre){
+  const si=liveData.slicerIndices, iM=si['Modality'], iP=si['Pass'];
+  if(iM===undefined||iP===undefined) return '';
+  const cols=['LL_FP','LL_QA','LD_FP','LD_QA'], mk=()=>({t:0,LL_FP:0,LL_QA:0,LD_FP:0,LD_QA:0}), m={}, g=mk();
+  rows.forEach(r=>{ const k=String(keyOf(r)||'—').trim()||'—', o=m[k]=m[k]||mk(), md=String(r[iM]||'').toLowerCase(), ps=String(r[iP]||'').trim().toUpperCase();
+    const c=(md.indexOf('lane')>-1?'LL':md.indexOf('lidar')>-1?'LD':'')+'_'+ps;
+    o.t++; g.t++; if(o[c]!==undefined){ o[c]++; g[c]++; } });
+  const list=Object.entries(m).sort((a,b)=>b[1].t-a[1].t), mx=list.length?list[0][1].t:1;
+  const cell=n=>n?`<td>${n}</td>`:'<td style="opacity:.4">–</td>';
+  return `<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${list.length} ${label.toLowerCase()}s · ${g.t} total</span></div><div class="panel-body table-wrap"><table class="tt mp"><thead><tr><th rowspan="2">${label}</th><th colspan="2">LANE LINE</th><th colspan="2">LIDAR</th><th rowspan="2">TOTAL</th></tr><tr><th>FP</th><th>QA</th><th>FP</th><th>QA</th></tr></thead><tbody>${list.map(([k,o])=>`<tr><td>${esc((pre||'')+k)}</td>${cols.map(c=>cell(o[c])).join('')}<td><span class="bar"><i style="width:${Math.round(o.t/mx*100)}%"></i></span><b>${o.t}</b></td></tr>`).join('')||'<tr><td colspan="6">No data</td></tr>'}${list.length?`<tr class="total"><td>Grand Total</td>${cols.map(c=>'<td>'+g[c]+'</td>').join('')}<td><b>${g.t}</b></td></tr>`:''}</tbody></table></div></div>`;
+}
 function renderTotalSubmitView(rows,si){
   const simple=(title,data)=>`<div class="panel"><div class="panel-head"><h3>${title}</h3><span>${data.length} items</span></div><div class="panel-body table-wrap"><table><thead><tr><th>Name</th><th>Total Submits</th></tr></thead><tbody>${data.map(([k,n])=>`<tr><td>${esc(k)}</td><td><b>${n}</b></td></tr>`).join('')||'<tr><td colspan="2">No data</td></tr>'}</tbody></table></div></div>`;
   let html=simple('⏱ By Shift',groupCountFn(rows,r=>r.sh));
+  if(si['Queue Name']!==undefined) html+=mpTable('📊 Total Submit — Queue Breakdown (Modality × Pass)',rows,r=>r[si['Queue Name']],'Queue');
+  if(liveData.locationColIdx>=0) html+=mpTable('🏭 Total Submit — Unit Breakdown (Modality × Pass)',rows,r=>r[liveData.locationColIdx],'Unit','📍 ');
   if(liveData.locationColIdx>=0) html+=simple('📍 By Room',groupCount(rows,liveData.locationColIdx));
   const iQc=si['Qtc Name'];
   if(iQc!==undefined && liveData.locationColIdx>=0){
@@ -949,7 +965,7 @@ function renderTeamsResults(){
   const hint=res.recs.length?'':`<div class="err" style="margin-bottom:12px">⚠️ مفيش أي تاسكات لـ ${esc(res.date)} شيفت ${esc(res.shift)} في Data Base.<br>الأيام الموجودة (آخر 7): ${esc(days||'مفيش بيانات')}<br>عدد صفوف Data Base: ${res.nRows} · عمود Timestamp رقم: ${res.tsCol}<br>آخر 3 timestamps: ${esc((res.samples||[]).join('  ||  '))}</div>`;
   document.getElementById('teamsResults').innerHTML=hint+`
     <div class="panel"><div class="panel-head"><h3>🔖 Team Daily Submission — ${esc(sub)}</h3></div><div class="panel-body"><div class="table-wrap shot"><table><thead><tr><th>QC</th><th>Team Daily Submission</th><th>Submitted by QTC</th><th>Submitted by External QTC</th><th>External QTCs Names</th></tr></thead>
-    <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td class="wrap">${esc(r.names)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
+    <tbody>${T.map(r=>`<tr class="${r.kind==='special'?'special':''}"><td>${esc(r.qtc)}</td><td><b>${r.total}</b></td><td>${r.own}</td><td>${r.ext}</td><td class="nm">${esc(r.names)}</td></tr>`).join('')||'<tr><td colspan="5">No data</td></tr>'}
     ${T.length?`<tr class="total"><td>TOTAL</td><td>${num(T,'total')}</td><td>${num(T,'own')}</td><td>${num(T,'ext')}</td><td></td></tr>`:''}</tbody></table></div></div></div>
     <div class="panel"><div class="panel-head"><h3>👤 Every QC — Total Submits — ${esc(sub)}</h3></div><div class="panel-body"><div class="table-wrap shot"><table><thead><tr><th>QC</th><th>Own Team</th><th>Other Teams</th><th>SV / QTC / SL / Buffer…</th><th>FP Lidar</th><th>QA Lidar</th><th>FP Lane</th><th>QA Lane</th><th>Total</th></tr></thead>
     <tbody>${I.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.own}</td><td>${r.other}</td><td>${r.special}</td><td>${r.fpLidar}</td><td>${r.qaLidar}</td><td>${r.fpLane}</td><td>${r.qaLane}</td><td><b>${r.total}</b></td></tr>`).join('')||'<tr><td colspan="9">No data</td></tr>'}
@@ -964,7 +980,7 @@ function renderTeamsResults(){
 //  ANALYSIS — تحليل التاسكات + Rate + Issue + الشباب
 // ============================================================
 const RATES=['Excellent','Good','Average','Poor'];
-const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc',shift:'',person:'',role:''}};
+const AN={log:{},names:[],tasks:[],byId:{},dmax:'',view:'tasks',lim:100,f:{queue:'',lab:'',qc:'',pass:'',mod:'',status:'',q:'',from:'',to:'',subj:'qc',shift:'',iid:'',irate:'',ian:'',iqc:'',ilab:''}};
 function anBuild(db){
   const c=cmap(db.headers), I={ts:ci(c,['timestamp']),u:ci(c,['unit']),qc:ci(c,['qtc name']),lab:ci(c,['labeler name']),mod:ci(c,['modality']),q:ci(c,['queue name']),p:ci(c,['pass']),lk:ci(c,['task link']),id:ci(c,['task id'])}, m={};
   db.rows.forEach(r=>{
@@ -1006,8 +1022,8 @@ function anShell(){
       <input id="anQ" placeholder="🔎 Task id / name…" value="${esc(f.q)}"></div>
       <div class="filters" id="anPills"><label>Pass:</label>${pills('pass',[['','All'],['FP','FP'],['QA','QA']])}<label>Type:</label>${pills('mod',[['','All'],['Lidar','Lidar'],['Lane Line','Lane Line']])}<label>Status:</label>${pills('status',[['','All'],['todo','Not analyzed'],['done','Analyzed'],['issue','Has issue']])}</div>`:''}
     ${v==='ratings'?`<div class="filters" id="anPills"><label>Group by:</label>${pills('subj',[['qc','🔖 QC'],['lab','👤 Labeler']])}<label>Shift:</label>${pills('shift',[['','All'],['M','M'],['N','N'],['ON','ON']])}</div>`:''}
-    ${v==='issues'?`<div class="filters"><select id="anPerson"><option value="">👤 All people</option>${[...new Set([...AN.names,...Object.values(AN.log).flatMap(e=>[e.analyst,e.lab,e.qc]),...AN.tasks.flatMap(t=>[t.lab,t.qc])].filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></div>
-      <div class="filters" id="anPills"><label>Role:</label>${pills('role',[['','Any role'],['analyst','🧪 Analyzed by'],['lab','👥 Team member'],['qc','🔖 QC reviewed']])}</div>`:''}
+    ${v==='issues'?(()=>{ const I=Object.values(AN.log).filter(e=>e.issue), u=k=>[...new Set(I.map(e=>e[k]).filter(Boolean))].sort(), o=a=>a.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+      return `<div class="filters"><input id="anIid" placeholder="🔎 Task ID…" style="min-width:150px"><select id="anIrate"><option value="">⭐ All Ratings</option>${o(RATES)}</select><select id="anIan"><option value="">🧪 All Analysts</option>${o(u('analyst'))}</select><select id="anIqc"><option value="">🔖 All QCs</option>${o(u('qc'))}</select><select id="anIlab"><option value="">👤 All Labelers</option>${o(u('lab'))}</select></div>`; })():''}
     ${(v==='ratings'||v==='team')?`<div class="filters" id="anWk"><label>Week:</label><button class="pill" data-w="-1">◀ Prev</button><button class="pill ${(()=>{const w=weekOf(ymd(new Date()),0);return f.from===w[0]&&f.to===w[1]?'on':''})()}" data-w="0">This week</button><button class="pill" data-w="1">Next ▶</button>${f.from&&f.to?`<span class="badge">${f.from} → ${f.to}</span>`:''}</div>`:''}
   </div></div><div id="anBody"></div>`;
   document.getElementById('anViews').onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; AN.view=b.dataset.view; AN.lim=100; anShell(); };
@@ -1016,7 +1032,8 @@ function anShell(){
   document.getElementById('anFrom').onchange=()=>{ f.from=document.getElementById('anFrom').value; AN.lim=100; anBody(); };
   document.getElementById('anTo').onchange=()=>{ f.to=document.getElementById('anTo').value; AN.lim=100; anBody(); };
   document.getElementById('anAll').onclick=()=>{ f.from=f.to=''; anBody(); };
-  [['anQueue','queue'],['anLab','lab'],['anQc','qc'],['anPerson','person']].forEach(([id,k])=>{ const x=document.getElementById(id); if(!x) return; x.value=f[k]; x.onchange=()=>{ f[k]=x.value; AN.lim=100; anBody(); }; makeSearchable(x); });
+  [['anQueue','queue'],['anLab','lab'],['anQc','qc'],['anIrate','irate'],['anIan','ian'],['anIqc','iqc'],['anIlab','ilab']].forEach(([id,k])=>{ const x=document.getElementById(id); if(!x) return; x.value=f[k]; x.onchange=()=>{ f[k]=x.value; AN.lim=100; anBody(); }; makeSearchable(x); });
+  const iid=document.getElementById('anIid'); if(iid){ iid.value=f.iid; iid.oninput=debounce(()=>{ f.iid=iid.value; AN.lim=100; anBody(); },250); }
   const q=document.getElementById('anQ'); if(q) q.oninput=debounce(()=>{ f.q=q.value; AN.lim=100; anBody(); },250);
   const pb=document.getElementById('anPills'); if(pb) pb.onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; f[b.dataset.k]=b.dataset.v; pb.querySelectorAll('.pill[data-k="'+b.dataset.k+'"]').forEach(p=>p.classList.toggle('on',p===b)); AN.lim=100; anBody(); };
   const wk=document.getElementById('anWk'); if(wk) wk.onclick=e=>{ const b=e.target.closest('.pill'); if(!b) return; const t=ymd(new Date()), w=b.dataset.w;
@@ -1067,8 +1084,8 @@ function anSave(tr){
   }).catch(e=>bad('⚠️ '+e.message));
 }
 function anIssues(b,L){
-  const f=AN.f, q=x=>String(x||'').trim().toLowerCase(), p=q(f.person);
-  const R=L.filter(e=>e.issue&&(!p||(f.role==='analyst'?q(e.analyst)===p:f.role==='lab'?q(e.lab)===p:f.role==='qc'?q(e.qc)===p:[e.analyst,e.lab,e.qc].some(x=>q(x)===p)))).sort((a,c)=>c.at.localeCompare(a.at));
+  const f=AN.f, q=x=>String(x||'').trim().toLowerCase(), id=q(f.iid);
+  const R=L.filter(e=>e.issue&&(!id||q(e.id).indexOf(id)>-1)&&(!f.irate||e.rating===f.irate)&&(!f.ian||q(e.analyst)===q(f.ian))&&(!f.iqc||q(e.qc)===q(f.iqc))&&(!f.ilab||q(e.lab)===q(f.ilab))).sort((a,c)=>c.at.localeCompare(a.at));
   document.getElementById('anCount').textContent=R.length+' issues';
   b.innerHTML=`<div class="panel"><div class="panel-body table-wrap"><table><thead><tr><th>Task</th><th>Analyzed at</th><th>Analyst</th><th>Labeler</th><th>QC</th><th>Type</th><th>Rate</th><th>Issue</th></tr></thead><tbody>${R.map(e=>{ const t=AN.byId[e.id], lk=t&&/^https?:\/\//.test(t.link)?t.link:''; return `<tr><td>${lk?`<a class="lnk" href="${esc(lk)}" target="_blank" rel="noopener">${esc(e.id)} ↗</a>`:esc(e.id)}</td><td>${esc(e.at)}</td><td>${esc(e.analyst)}</td><td>${esc(e.lab)}</td><td>${esc(e.qc)}</td><td>${esc(e.mod)}</td><td>${esc(e.rating)||'-'}</td><td style="white-space:normal;min-width:260px">${esc(e.issue)}</td></tr>`; }).join('')||'<tr><td colspan="8">No issues</td></tr>'}</tbody></table></div></div>`;
 }

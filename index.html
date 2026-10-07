@@ -158,6 +158,11 @@ button:not(:disabled):active,.tab:active,.pill:active,.btn:active,.ss-btn:active
 .ripc i{position:absolute;border-radius:50%;background:var(--acc);opacity:.5;transform:scale(0);animation:ripple .6s ease-out forwards}
 @keyframes ripple{to{transform:scale(1);opacity:0}}
 @media (prefers-reduced-motion:reduce){ .ripc i{animation:none;opacity:0} button,.tab,.pill,.btn,.ss-btn,.dp-d{transition:none} }
+
+.who{display:flex;align-items:center;justify-content:center;gap:8px}
+.who .av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:14px}
+.spl-av{position:absolute;inset:0;margin:auto;width:68px;height:68px;border-radius:50%;object-fit:cover;box-shadow:0 0 20px var(--acc);animation:splpop .5s ease-out both}
+@keyframes splpop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -168,12 +173,6 @@ button:not(:disabled):active,.tab:active,.pill:active,.btn:active,.ss-btn:active
     <input id="gateEmail" class="gate-input" type="email" placeholder="you@company.com" autocomplete="off">
     <button id="gateBtn" class="btn dark" style="width:100%;justify-content:center" onclick="submitGateEmail()">🔓 Enter</button>
     <div id="gateWho"></div>
-    <div id="gateBio"><button type="button" class="bio-btn" onclick="bioLogin()" aria-label="Unlock with face or fingerprint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"/><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"/><path d="M12 11v2a14 14 0 0 0 2.5 8"/><path d="M8 15a18 18 0 0 0 1.8 6"/><path d="M4.9 19a22 22 0 0 1-.9-7v-1a8 8 0 0 1 12-6.95"/></svg></button>
-      <div class="bio-t">Unlock with face or fingerprint</div><div class="bio-n" id="bioWho"></div>
-      <div class="bio-l"><a class="lnk" href="#" onclick="useEmail();return false">Use email instead</a> · <a class="lnk" href="#" onclick="forgetDevice();return false">Forget this device</a></div></div>
-    <div id="gateEnr"><div class="bio-btn" style="cursor:default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"/><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"/><path d="M12 11v2a14 14 0 0 0 2.5 8"/><path d="M8 15a18 18 0 0 0 1.8 6"/><path d="M4.9 19a22 22 0 0 1-.9-7v-1a8 8 0 0 1 12-6.95"/></svg></div>
-      <div class="bio-t">Use face or fingerprint next time?</div>
-      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn dark" style="flex:1;justify-content:center" onclick="enrollNow()">Enable</button><button class="btn" style="flex:1;justify-content:center" onclick="enrollSkip()">Not now</button></div></div>
     <div class="ld gate-ld"><i></i><i></i><b>⚡</b></div>
     <div id="gateMsg" style="white-space:pre-wrap;margin-top:10px;color:var(--ink-soft);font-size:12.5px"></div>
   </div>
@@ -183,7 +182,7 @@ button:not(:disabled):active,.tab:active,.pill:active,.btn:active,.ss-btn:active
   <div><h1><span class="logo"></span> MEEG Productivity</h1><div class="meta">Unified Dashboard — <span id="updTime">—</span></div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="userChip" class="chip-user"></span>
-    <button class="btn" id="lockBtn" style="display:none" onclick="location.reload()">🔒 Lock</button>
+    <button class="btn" id="logoutBtn" onclick="logout()">⏻ Logout</button>
     <button class="btn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
     <button class="btn dark" onclick="refreshAll()">🔄 Refresh</button>
   </div>
@@ -1244,77 +1243,47 @@ function showSplash(u){
   d.innerHTML='<div><div class="rg"><i></i><i></i><svg viewBox="0 0 64 64"><path d="M36 8L16 36h13l-4 20 23-30H34z"/></svg></div>'
    +'<div class="nb">'+Array.from(String(u.name||'')).map((c,i)=>'<span style="--i:'+i+'">'+esc(c)+'</span>').join('')+'</div>'
    +(pos?'<div class="pb">'+esc(pos)+'</div>':'')+'</div>';
+  const sph=photoUrl(u);
+  if(sph){ const im=new Image(); im.referrerPolicy='no-referrer'; im.onload=()=>{ const rg=d.querySelector('.rg'); if(!rg) return; im.className='spl-av'; rg.appendChild(im); const sv=rg.querySelector('svg'); if(sv) sv.style.display='none'; }; im.src=sph; }
   const close=()=>{ d.classList.add('out'); setTimeout(()=>d.remove(),600); };
   d.onclick=close; document.body.appendChild(d); setTimeout(close,2400);
 }
+function photoUrl(u){
+  let ph=String(u.photo||u.picture||u.avatar||u.image||'').trim();
+  const dm=ph.match(/drive\.google\.com\/.*?(?:\/d\/|[?&]id=)([\w-]{20,})/); if(dm) ph='https://drive.google.com/thumbnail?id='+dm[1]+'&sz=w200';   // أي لينك Drive عادي يتحول لوحده
+  return /^https?:\/\//.test(ph)?ph:'';
+}
+function avatarEl(u,cls){
+  const nm=String(u.name||''), ini=nm.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
+  const mk=()=>{ const sp=document.createElement('span'); sp.className=cls; sp.textContent=ini; return sp; };
+  const ph=photoUrl(u); if(!ph) return mk();
+  const img=document.createElement('img'); img.className=cls; img.referrerPolicy='no-referrer'; img.alt=''; img.src=ph; img.onerror=()=>img.replaceWith(mk()); return img;
+}
 function setUserChip(u){
   const el=document.getElementById('userChip'); el.textContent='';
-  const nm=String(u.name||''), ph=String(u.photo||u.picture||u.avatar||u.image||'');
-  const ini=nm.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
-  const mk=()=>{ const s=document.createElement('span'); s.className='av'; s.textContent=ini; return s; };
-  let av;
-  if(/^https?:\/\//.test(ph)){ av=document.createElement('img'); av.className='av'; av.referrerPolicy='no-referrer'; av.alt=''; av.src=ph; av.onerror=()=>av.replaceWith(mk()); } else av=mk();
   const info=document.createElement('span'); info.className='uinfo';
-  const b=document.createElement('b'); b.textContent=nm; info.append(b);
+  const bn=document.createElement('b'); bn.textContent=String(u.name||''); info.append(bn);
   if(u.position){ const sm=document.createElement('small'); sm.textContent=u.position; info.append(sm); }
-  el.append(av,info);
+  el.append(avatarEl(u,'av'),info);
 }
 function bootApp(u){ window.ME=u;
   CURRENT_EMAIL=u.email; try{ localStorage.setItem('meeg_email',u.email); localStorage.setItem('meeg_user',JSON.stringify(u)); }catch(e){}
   setUserChip(u);
   document.getElementById('gate').classList.add('hide'); loadTab('live');
-  showSplash(u); const lk=document.getElementById('lockBtn'); if(lk) lk.style.display=pkGet()?'':'none';
+  showSplash(u);
 }
-const PK_KEY='meeg_pk', PK_NO='meeg_pk_no';
-const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
-const unb64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
-function pkSupported(){ return !!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext); }
-function pkGet(){ try{ return JSON.parse(localStorage.getItem(PK_KEY)||'null'); }catch(e){ return null; } }
-let PENDING_U=null;
-function gateMode(m){ const g=document.getElementById('gate'); g.classList.remove('bio','enr'); if(m) g.classList.add(m); }
-function showBioGate(pk){
-  let nm=''; try{ const cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); if(cu&&cu.email===pk.email) nm=cu.name+(cu.position?' — '+cu.position:''); }catch(e){}
-  document.getElementById('bioWho').textContent=nm||pk.email; gateMode('bio'); gateMsg('');
+// تسجيل الدخول بالإيميل كل يوم: الجهاز بيفتكرك لحد نهاية اليوم، وبكرة بيطلب الإيميل تاني
+['meeg_pk','meeg_pk_no'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });   // تنضيف بيانات البصمة القديمة
+function todayStr(){ const n=new Date(); return n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate()); }
+function logout(){
+  ['meeg_user','meeg_email','meeg_day'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
+  try{ indexedDB.deleteDatabase('meeg_cache'); }catch(e){}
+  location.reload();
 }
-function useEmail(){ gateMode(''); gateMsg(''); const i=document.getElementById('gateEmail'); i.value=CURRENT_EMAIL||''; i.focus(); }
-function forgetDevice(){ ['meeg_pk','meeg_user','meeg_email'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); CURRENT_EMAIL=''; useEmail(); }
-async function bioLogin(auto){
-  const pk=pkGet(); if(!pk){ useEmail(); return; }
-  try{
-    await navigator.credentials.get({publicKey:{ challenge:crypto.getRandomValues(new Uint8Array(32)),
-      allowCredentials:[{type:'public-key',id:unb64(pk.id),transports:['internal']}], userVerification:'required', timeout:60000 }});
-  }catch(e){ gateMsg(auto===true?'':'⚠️ Biometric check was cancelled. Try again or use email.'); return; }
-  const g=document.getElementById('gate'); g.classList.add('busy'); gateMsg('Checking…'); CURRENT_EMAIL=pk.email;
-  callApi('checkemail',{email:pk.email}).then(u=>{
-    g.classList.remove('busy');
-    if(u&&u.ok){ gateMsg(''); bootApp(u); }
-    else { ['meeg_pk','meeg_user'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); useEmail(); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
-  }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
-}
-// عرض تفعيل البصمة بعد أول دخول بالإيميل (للمسموح لهم فقط)
-function offerBio(u){
-  if(!pkSupported()) return false;
-  const pk=pkGet(); if(pk&&pk.email===u.email) return false;
-  let no=''; try{ no=localStorage.getItem(PK_NO)||''; }catch(e){}
-  if(no===u.email) return false;
-  PENDING_U=u; gateMode('enr'); gateMsg(''); return true;
-}
-async function enrollNow(){
-  const u=PENDING_U; if(!u) return;
-  try{
-    const cred=await navigator.credentials.create({publicKey:{ challenge:crypto.getRandomValues(new Uint8Array(32)), rp:{name:'MEEG Productivity'},
-      user:{id:new TextEncoder().encode(u.email),name:u.email,displayName:u.name||u.email},
-      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
-      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'}, timeout:60000 }});
-    localStorage.setItem(PK_KEY,JSON.stringify({email:u.email,id:b64(cred.rawId)}));
-  }catch(e){ gateMsg('⚠️ Couldn\'t set up biometrics on this device. You can continue with email.'); }
-  gateMode(''); PENDING_U=null; bootApp(u);
-}
-function enrollSkip(){ const u=PENDING_U; if(!u) return; try{ localStorage.setItem(PK_NO,u.email); }catch(e){} gateMode(''); PENDING_U=null; bootApp(u); }
 function tryEmail(email){
   gateMsg('Checking…'); CURRENT_EMAIL=email; initData();
   const g=document.getElementById('gate'); g.classList.add('busy');
-  callApi('checkemail',{email}).then(u=>{ g.classList.remove('busy'); if(u&&u.ok){ if(!offerBio(u)) bootApp(u); } else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
+  callApi('checkemail',{email}).then(u=>{ g.classList.remove('busy'); if(u&&u.ok){ try{localStorage.setItem('meeg_day',todayStr());}catch(e){} bootApp(u); } else gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }).catch(e=>{ g.classList.remove('busy'); gateMsg('⚠️ '+e.message); });
 }
 function submitGateEmail(){ const e=document.getElementById('gateEmail').value.trim().toLowerCase(); if(!e){ gateMsg('⚠️ Please enter an email'); return; } tryEmail(e); }
 document.getElementById('gateEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') submitGateEmail(); });
@@ -1323,23 +1292,21 @@ const lookupWho=debounce(()=>{
   const em=document.getElementById('gateEmail').value.trim().toLowerCase(), box=document.getElementById('gateWho'), my=++whoSeq;
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ box.innerHTML=''; return; }
   callApi('checkemail',{email:em}).then(u=>{ if(my!==whoSeq) return;
-    box.innerHTML=(u&&u.ok)?'<div class="who">👤 '+esc(u.name)+(u.position?' — <span>'+esc(u.position)+'</span>':'')+'</div>':''; }).catch(()=>{ if(my===whoSeq) box.innerHTML=''; });
+    box.textContent=''; if(u&&u.ok){ const w=document.createElement('div'); w.className='who'; w.append(avatarEl(u,'av')); const t=document.createElement('span'); t.style.color='var(--ink)'; t.textContent=u.name; w.append(t); if(u.position){ const ps=document.createElement('span'); ps.textContent=' · '+u.position; w.append(ps); } box.append(w); } }).catch(()=>{ if(my===whoSeq) box.innerHTML=''; });
 },500);
 document.getElementById('gateEmail').addEventListener('input',()=>{ document.getElementById('gateWho').innerHTML=''; lookupWho(); });
 if(API_URL.indexOf('PASTE_YOUR')===0) gateMsg('⚠️ Developer: set API_URL at the top of the script first.');
 else if(CURRENT_EMAIL){
-  initData();
-  const pk0=pkGet();
-  if(pk0&&pk0.email===CURRENT_EMAIL&&pkSupported()){ showBioGate(pk0); setTimeout(()=>bioLogin(true),400); }
-  else {
-  let cu=null; try{ cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); }catch(e){}
-  if(cu&&cu.ok&&cu.email===CURRENT_EMAIL){
-    bootApp(cu);   // يفتح فوراً من الكاش، والفحص بيتم في الخلفية
+  let cu=null, day=''; try{ cu=JSON.parse(localStorage.getItem('meeg_user')||'null'); day=localStorage.getItem('meeg_day')||''; }catch(e){}
+  if(cu&&cu.ok&&cu.email===CURRENT_EMAIL&&day===todayStr()){
+    initData(); bootApp(cu);   // نفس اليوم: يفتح على طول ويتأكد من الإيميل في الخلفية
     callApi('checkemail',{email:CURRENT_EMAIL}).then(u=>{
-      if(!(u&&u.ok)){ try{localStorage.removeItem('meeg_user');}catch(e){} document.getElementById('gate').classList.remove('hide'); gateMsg('🔒 '+((u&&u.msg)||'Access denied')); }
+      if(!(u&&u.ok)){ try{localStorage.removeItem('meeg_user');}catch(e){} document.getElementById('gate').classList.remove('hide'); gateMsg('❌ '+((u&&u.msg)||'Access denied')); }
       else { window.ME=u; try{localStorage.setItem('meeg_user',JSON.stringify(u));}catch(e){} setUserChip(u); }
     }).catch(()=>{});
-  } else { document.getElementById('gateEmail').value=CURRENT_EMAIL; tryEmail(CURRENT_EMAIL); }
+  } else {   // يوم جديد: لازم تكتب الإيميل تاني
+    ['meeg_user','meeg_email','meeg_day'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} }); CURRENT_EMAIL='';
+    gateMsg('🔑 Enter your email to start today\'s session.'); setTimeout(()=>{ const i=document.getElementById('gateEmail'); if(i) i.focus(); },150);
   }
 }
 </script>
